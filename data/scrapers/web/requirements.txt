@@ -1,0 +1,18 @@
+# requirements.txt
+# Install with:  pip install -r requirements.txt
+
+# Core scraping
+requests==2.31.0
+beautifulsoup4==4.12.3
+lxml==5.2.1
+
+# Excel output
+pandas==2.2.2
+openpyxl==3.1.2
+
+# Selenium — IMPORTANT: use 4.10+ so selenium-manager handles ChromeDriver automatically
+# This fixes the [WinError 193] bug caused by webdriver-manager on Windows
+selenium>=4.10.0
+
+# NOTE: Do NOT install webdriver-manager — it has a Windows bug (WinError 193)
+# Selenium 4.10+ manages ChromeDriver automatically without it
