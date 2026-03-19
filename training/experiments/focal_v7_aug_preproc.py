@@ -1,0 +1,353 @@
+import os
+import sys
+import gc
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch_directml
+from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
+from transformers import (
+    AutoTokenizer,
+    AutoModelForSequenceClassification,
+    AutoConfig,
+    get_cosine_schedule_with_warmup,
+)
+from sklearn.metrics import (
+    classification_report, confusion_matrix, f1_score, accuracy_score
+)
+import warnings
+warnings.filterwarnings("ignore")
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
+WORK_DIR = os.path.dirname(os.path.abspath(__file__))
+os.chdir(WORK_DIR)
+
+HF_NAME    = "tugstugi/bert-base-mongolian-cased"
+MERGED_CSV = os.path.join(WORK_DIR, "relabeled_v7_aug_v2_preproc_normalized.csv")
+SAVE_DIR   = os.path.join(WORK_DIR, "best_mnbert_v7_focal_aug_preproc_model")
+PRED_CSV   = os.path.join(WORK_DIR, "test_predictions_v7_focal_aug_preproc.csv")
+
+LABEL_MAP  = {"POSITIVE": 0, "NEUTRAL": 1, "CONSTRUCTIVE": 2, "TOXIC": 3}
+ID2LABEL   = {v: k for k, v in LABEL_MAP.items()}
+LABEL_NAMES= ["POSITIVE", "NEUTRAL", "CONSTRUCTIVE", "TOXIC"]
+
+LR                 = 3e-5
+BATCH_SIZE         = 16
+WEIGHT_DECAY       = 0.01
+WARMUP_RATIO       = 0.10
+GRAD_CLIP          = 1.0
+CLASSIFIER_DROPOUT = 0.15
+MAX_EPOCHS         = 20
+PATIENCE           = 3
+VAL_TEST_BATCH     = 32
+MAX_LENGTH         = 256
+SEED               = 42
+FOCAL_GAMMA        = 2.0
+
+EXTRA_SPECIAL_TOKENS = ["[EMOJI]", "[URL]", "[NUM]", "[HTML]"]
+
+SOTA_METRICS = {
+    "accuracy": 0.8143, "macro_f1": 0.7760,
+}
+V7_METRICS = {
+    "accuracy": 0.8064, "macro_f1": 0.7698, "weighted_f1": 0.8052,
+    "POSITIVE": 0.6593, "NEUTRAL": 0.7697,
+    "CONSTRUCTIVE": 0.8539, "TOXIC": 0.7964,
+}
+
+torch.manual_seed(SEED)
+np.random.seed(SEED)
+
+if os.path.isdir(SAVE_DIR) and os.listdir(SAVE_DIR):
+    print(f"ERROR: {SAVE_DIR} already exists and non-empty. Stop.")
+    raise SystemExit(1)
+os.makedirs(SAVE_DIR, exist_ok=True)
+
+try:
+    device = torch_directml.device()
+    _ = torch.zeros(1, device=device)
+    print(f"DirectML device initialized: {device}")
+except Exception as e:
+    print(f"ERROR: DirectML failed to initialize — {e}")
+    raise SystemExit(1)
+
+if not os.path.exists(MERGED_CSV):
+    print(f"ERROR: {MERGED_CSV} not found"); raise SystemExit(1)
+
+df = pd.read_csv(MERGED_CSV, encoding="utf-8-sig")
+required = {"id", "text_light_clean", "text_normalized", "label", "split", "source"}
+missing = required - set(df.columns)
+if missing:
+    print(f"ERROR: missing columns: {missing}"); raise SystemExit(1)
+
+df["input_text"] = df.apply(
+    lambda r: f"[{r['source']}] {str(r['text_normalized'] or '')}", axis=1
+)
+df["label_id"] = df["label"].map(LABEL_MAP)
+
+n_aug = int((df["source"].astype(str) == "augmented").sum())
+print(f"Rows: total={len(df)} "
+      f"train={int((df.split=='train').sum())} "
+      f"val={int((df.split=='val').sum())} "
+      f"test={int((df.split=='test').sum())}  aug={n_aug}")
+print("✅ [Step 1 — data loaded]")
+
+tokenizer = AutoTokenizer.from_pretrained(HF_NAME)
+n_added = tokenizer.add_special_tokens(
+    {"additional_special_tokens": EXTRA_SPECIAL_TOKENS}
+)
+print(f"✅ [Step 2 — tokenizer loaded; added {n_added} special tokens; "
+      f"vocab now {len(tokenizer)}]")
+for t in EXTRA_SPECIAL_TOKENS:
+    ids = tokenizer.encode(t, add_special_tokens=False)
+    print(f"   {t} → ids {ids}")
+
+def encode(texts, labels):
+    enc = tokenizer(texts, padding="max_length", truncation=True,
+                    max_length=MAX_LENGTH, return_tensors="pt")
+    return enc["input_ids"], enc["attention_mask"], torch.tensor(labels, dtype=torch.long)
+
+class DS(Dataset):
+    def __init__(self, ids, mask, y):
+        self.ids, self.mask, self.y = ids, mask, y
+    def __len__(self): return len(self.y)
+    def __getitem__(self, i):
+        return {"input_ids": self.ids[i], "attention_mask": self.mask[i], "labels": self.y[i]}
+
+print("Tokenizing splits ...")
+tr_ids, tr_mask, tr_y = encode(df[df.split=="train"]["input_text"].tolist(),
+                               df[df.split=="train"]["label_id"].tolist())
+va_ids, va_mask, va_y = encode(df[df.split=="val"]["input_text"].tolist(),
+                               df[df.split=="val"]["label_id"].tolist())
+te_ids, te_mask, te_y = encode(df[df.split=="test"]["input_text"].tolist(),
+                               df[df.split=="test"]["label_id"].tolist())
+train_ds = DS(tr_ids, tr_mask, tr_y)
+val_ds   = DS(va_ids, va_mask, va_y)
+test_ds  = DS(te_ids, te_mask, te_y)
+print(f"  train={len(train_ds)} val={len(val_ds)} test={len(test_ds)}")
+print("✅ [Step 3 — tokenized]")
+
+train_labels_np = tr_y.numpy()
+counts = np.bincount(train_labels_np, minlength=4).astype(np.float64)
+print(f"Train label counts: {dict(zip(LABEL_NAMES, counts.astype(int).tolist()))}")
+total = counts.sum()
+class_weights = (total / (len(counts) * counts))
+print(f"Class weights (alpha for focal): "
+      f"{dict(zip(LABEL_NAMES, [round(w,3) for w in class_weights.tolist()]))}")
+sample_weights = np.array([class_weights[y] for y in train_labels_np], dtype=np.float64)
+print("✅ [Step 4 — class weights computed]")
+
+class FocalLoss(nn.Module):
+    def __init__(self, alpha=None, gamma: float = 2.0, reduction: str = "mean"):
+        super().__init__()
+        if alpha is not None and not isinstance(alpha, torch.Tensor):
+            alpha = torch.tensor(alpha, dtype=torch.float32)
+        self.register_buffer("alpha",
+            alpha if alpha is not None else torch.tensor([]),
+            persistent=False)
+        self.gamma = float(gamma)
+        self.reduction = reduction
+
+    def forward(self, logits, targets):
+        log_probs = F.log_softmax(logits, dim=-1)
+        log_pt    = log_probs.gather(1, targets.unsqueeze(1)).squeeze(1)
+        pt        = log_pt.exp().clamp(min=1e-8, max=1.0)
+        focal_term= (1.0 - pt).pow(self.gamma)
+        if self.alpha.numel() > 0:
+            alpha_t = self.alpha.to(logits.device).gather(0, targets)
+            loss = -alpha_t * focal_term * log_pt
+        else:
+            loss = -focal_term * log_pt
+        if self.reduction == "mean": return loss.mean()
+        if self.reduction == "sum":  return loss.sum()
+        return loss
+
+def fresh_model():
+    config = AutoConfig.from_pretrained(HF_NAME, num_labels=4)
+    config.classifier_dropout = CLASSIFIER_DROPOUT
+    m = AutoModelForSequenceClassification.from_pretrained(HF_NAME, config=config)
+    return m
+
+def is_oom(err: BaseException) -> bool:
+    s = str(err).lower()
+    return any(k in s for k in [
+        "out of memory","oom","could not allocate",
+        "not enough gpu video memory","alloc failed",
+        "cuda error: out of memory","hip out of memory",
+    ])
+
+@torch.no_grad()
+def evaluate(model, loader):
+    model.eval()
+    losses, y_true, y_pred = [], [], []
+    ce = torch.nn.CrossEntropyLoss()
+    for batch in loader:
+        input_ids = batch["input_ids"].to(device)
+        attn = batch["attention_mask"].to(device)
+        labels = batch["labels"].to(device)
+        logits = model(input_ids=input_ids, attention_mask=attn).logits
+        losses.append(ce(logits, labels).item())
+        y_true.append(labels.cpu().numpy())
+        y_pred.append(torch.argmax(logits, dim=-1).cpu().numpy())
+    yt = np.concatenate(y_true); yp = np.concatenate(y_pred)
+    return {"loss": float(np.mean(losses)),
+            "macro_f1": f1_score(yt, yp, average="macro"),
+            "accuracy": accuracy_score(yt, yp),
+            "y_true": yt, "y_pred": yp}
+
+def do_full_training(batch_size: int):
+    print(f"\n── Training: batch_size={batch_size}, lr={LR:.0e}, "
+          f"epochs={MAX_EPOCHS}, patience={PATIENCE}")
+    sampler = WeightedRandomSampler(
+        weights=sample_weights, num_samples=len(sample_weights), replacement=True
+    )
+    train_loader = DataLoader(train_ds, batch_size=batch_size, sampler=sampler, num_workers=0)
+    val_loader   = DataLoader(val_ds,   batch_size=VAL_TEST_BATCH, shuffle=False, num_workers=0)
+
+    model = fresh_model().to(device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
+
+    total_steps  = len(train_loader) * MAX_EPOCHS
+    warmup_steps = max(1, int(total_steps * WARMUP_RATIO))
+    scheduler    = get_cosine_schedule_with_warmup(
+        optimizer, num_warmup_steps=warmup_steps, num_training_steps=total_steps
+    )
+    print(f"  Scheduler: linear warmup ({warmup_steps} steps, "
+          f"{100*WARMUP_RATIO:.0f}%) → cosine decay to 0 over {total_steps} steps")
+
+    focal_fn = FocalLoss(
+        alpha=torch.tensor(class_weights, dtype=torch.float32),
+        gamma=FOCAL_GAMMA, reduction="mean",
+    )
+    print(f"  Loss: FocalLoss(gamma={FOCAL_GAMMA}, alpha=class_weights)")
+
+    best_val_f1 = -1.0; best_epoch = -1; patience_counter = 0
+    for epoch in range(1, MAX_EPOCHS + 1):
+        model.train()
+        tr_losses = []; tr_true, tr_pred = [], []
+        for batch in train_loader:
+            input_ids = batch["input_ids"].to(device)
+            attn = batch["attention_mask"].to(device)
+            labels = batch["labels"].to(device)
+            logits = model(input_ids=input_ids, attention_mask=attn).logits
+            loss = focal_fn(logits, labels)
+            optimizer.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
+            optimizer.step()
+            scheduler.step()
+            tr_losses.append(loss.item())
+            tr_true.append(labels.detach().cpu().numpy())
+            tr_pred.append(torch.argmax(logits, dim=-1).detach().cpu().numpy())
+
+        tr_loss = float(np.mean(tr_losses))
+        tr_f1 = f1_score(np.concatenate(tr_true), np.concatenate(tr_pred), average="macro")
+        val = evaluate(model, val_loader)
+        val_loss = val["loss"]; val_f1 = val["macro_f1"]
+
+        new_best = val_f1 > best_val_f1
+        tag = " [NEW BEST]" if new_best else ""
+        print(f"  Epoch {epoch:02d} | train_loss={tr_loss:.4f} train_macro_f1={tr_f1:.4f} | "
+              f"val_loss={val_loss:.4f} val_macro_f1={val_f1:.4f}{tag}")
+
+        if new_best:
+            best_val_f1 = val_f1; best_epoch = epoch; patience_counter = 0
+            cpu_state_dict = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+            torch.save(cpu_state_dict, os.path.join(SAVE_DIR, "pytorch_model.bin"))
+            model.config.save_pretrained(SAVE_DIR)
+            tokenizer.save_pretrained(SAVE_DIR)
+            print(f"    >> saved best checkpoint to {SAVE_DIR}")
+        else:
+            patience_counter += 1
+            if patience_counter >= PATIENCE:
+                print(f"  Early stop: patience {PATIENCE} hit at epoch {epoch}. "
+                      f"Best epoch was {best_epoch} (val_macro_f1={best_val_f1:.4f}).")
+                break
+    return best_val_f1, best_epoch
+
+current_batch = BATCH_SIZE
+try:
+    best_val_f1, best_epoch = do_full_training(current_batch)
+except Exception as e:
+    if is_oom(e):
+        halved = max(1, current_batch // 2)
+        print(f"\n⚠️  OOM at batch_size={current_batch}. Retrying at {halved}.")
+        gc.collect(); current_batch = halved
+        try:
+            best_val_f1, best_epoch = do_full_training(current_batch)
+        except Exception as e2:
+            if is_oom(e2):
+                print(f"\nERROR: OOM persists at batch_size={current_batch}.")
+                raise SystemExit(1)
+            raise
+    else:
+        raise
+print(f"\nTraining complete. best_epoch={best_epoch} best_val_macro_f1={best_val_f1:.4f}")
+print("✅ [Step 5 — training done]")
+
+print("\nLoading best checkpoint for test evaluation ...")
+config = AutoConfig.from_pretrained(HF_NAME, num_labels=4)
+config.classifier_dropout = CLASSIFIER_DROPOUT
+model = AutoModelForSequenceClassification.from_pretrained(HF_NAME, config=config)
+model.resize_token_embeddings(len(tokenizer))
+state = torch.load(os.path.join(SAVE_DIR, "pytorch_model.bin"), map_location="cpu")
+model.load_state_dict(state)
+model.to(device); model.eval()
+
+test_loader = DataLoader(test_ds, batch_size=VAL_TEST_BATCH, shuffle=False, num_workers=0)
+test = evaluate(model, test_loader)
+y_true = test["y_true"]; y_pred = test["y_pred"]
+
+acc = accuracy_score(y_true, y_pred)
+macro_f1 = f1_score(y_true, y_pred, average="macro")
+weighted_f1 = f1_score(y_true, y_pred, average="weighted")
+per_class_f1 = f1_score(y_true, y_pred, average=None, labels=[0,1,2,3])
+
+print("\n" + "═"*64)
+print(" Test-set results: focal+cosine  +  doc-preproc  +  aug_v2")
+print("═"*64)
+print(f"test_loss       : {test['loss']:.4f}")
+print(f"Accuracy        : {acc:.4f}")
+print(f"Macro F1        : {macro_f1:.4f}")
+print(f"Weighted F1     : {weighted_f1:.4f}")
+
+print("\nclassification_report:")
+print(classification_report(y_true, y_pred, labels=[0,1,2,3],
+                            target_names=LABEL_NAMES, digits=4))
+
+print("Confusion matrix (rows=true, cols=pred):")
+cm = confusion_matrix(y_true, y_pred, labels=[0,1,2,3])
+print("            " + " ".join(f"{n:>13s}" for n in LABEL_NAMES))
+for i, row in enumerate(cm):
+    cells = " ".join(f"{v:>13d}" for v in row)
+    print(f"  {LABEL_NAMES[i]:<10s}{cells}")
+
+def pct(prev, new):
+    return f"{(new - prev) * 100:+.2f}%"
+
+print("\n── Comparison: focal+cosine SOTA  vs  this run ──")
+print(f"| {'Metric':<15s} | {'SOTA':>7s} | {'this':>7s} | {'Δ':>8s} |")
+print(f"|{'-'*17}|{'-'*9}|{'-'*9}|{'-'*10}|")
+print(f"| {'Accuracy':<15s} | {SOTA_METRICS['accuracy']:>7.4f} | "
+      f"{acc:>7.4f} | {pct(SOTA_METRICS['accuracy'], acc):>8s} |")
+print(f"| {'Macro F1':<15s} | {SOTA_METRICS['macro_f1']:>7.4f} | "
+      f"{macro_f1:>7.4f} | {pct(SOTA_METRICS['macro_f1'], macro_f1):>8s} |")
+
+test_df = df[df["split"] == "test"].copy().reset_index(drop=True)
+assert len(test_df) == len(y_pred), "test row mismatch"
+out = pd.DataFrame({
+    "id":              test_df["id"].values,
+    "text_light_clean":test_df["text_light_clean"].values,
+    "true_label":      [ID2LABEL[int(v)] for v in y_true],
+    "predicted_label": [ID2LABEL[int(v)] for v in y_pred],
+})
+out.to_csv(PRED_CSV, index=False, encoding="utf-8-sig")
+print(f"\n✅ saved {len(out)} test predictions to {PRED_CSV}")
+print("\n✅ Run complete.")
