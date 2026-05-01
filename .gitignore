@@ -1,0 +1,91 @@
+# ── Python ────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+
+# ── Data files (large / private) ─────────────────────────────────────────
+*.csv
+*.xlsx
+*.xls
+*.json
+*.jsonl
+*.parquet
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+
+# ── Model weights ─────────────────────────────────────────────────────────
+*.pt
+*.pth
+*.bin
+*.safetensors
+best_mnbert*/
+best_mnbert_v*/
+sample scores/best_*/
+sample scores/project/data/
+
+# ── Notebooks (outputs only — keep .ipynb source) ─────────────────────────
+# Uncomment next line to exclude notebooks entirely:
+# *.ipynb
+
+# ── Logs & temp outputs ───────────────────────────────────────────────────
+*.log
+*.out
+texput.log
+sample scores/project/outputs/
+sample scores/project/logs/
+
+# ── Facebook browser profile (cookies, cache, compiled JS) ────────────────
+facebookmnscraper/fb_profile/
+
+# ── Selenium / browser drivers ────────────────────────────────────────────
+*.exe
+geckodriver*
+chromedriver*
+
+# ── Archives ──────────────────────────────────────────────────────────────
+*.zip
+*.tar.gz
+*.rar
+
+# ── LaTeX build artifacts ─────────────────────────────────────────────────
+latex file/main.aux
+latex file/main.bbl
+latex file/main.blg
+latex file/main.lof
+latex file/main.log
+latex file/main.lot
+latex file/main.out
+latex file/main.run.xml
+latex file/main.synctex.gz
+latex file/main.toc
+latex file/main-blx.bib
+latex file/texput.log
+latex file/*.pdf
+
+# ── PDF & Word docs (large binary) ────────────────────────────────────────
+*.pdf
+*.docx
+*.pptx
+
+# ── Misc ──────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.tmp
+nul
+dada.txt
+docx_content.txt
+docx_full.txt
+sup.zip
+doc_v2.zip
+document.zip
+diploma_0.2v_unpacked/
