@@ -77,6 +77,21 @@ latex file/*.pdf
 *.docx
 *.pptx
 
+# ── Model checkpoint directories ─────────────────────────────────────────
+grid_ckpt_*/
+stage1_model/
+stage2_model/
+sample scores/eda_plots/
+
+# ── Personal notes / roadmap docs ─────────────────────────────────────────
+DIPLOMA_ROADMAP_APRIL2026.txt
+*roadmap*.txt
+"current idea.txt"
+"current progression of diploma.txt"
+"Schedule for uzleg.jpg"
+*.jpg
+*.png.bak
+
 # ── Misc ──────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
