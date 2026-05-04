@@ -111,3 +111,11 @@ sup.zip
 doc_v2.zip
 document.zip
 diploma_0.2v_unpacked/
+
+# Utility scripts (not part of project)
+redate_commits.py
+strip_comments.py
+generate_figures.py
+current idea.txt
+current progression of diploma.txt
+sample scores/

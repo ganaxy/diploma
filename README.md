@@ -1,70 +1,109 @@
-# Mongolian NLP Sentiment Classifier
+# Монгол сэтгэгдлийн мэдрэмжийн шинжилгээ
 
-MN-BERT fine-tuned on a manually annotated 10,000-sample Mongolian social media dataset.
-Classifies comments into four categories: **Эерэг (Positive)**, **Саармаг (Neutral)**,
-**Хортой сөрөг (Toxic)**, **Бүтээлч шүүмжлэл (Constructive Criticism)**.
+MN-BERT загвар ашиглан монгол хэлний сошиал медиа сэтгэгдлийг **4 ангилалд** автоматаар ангилах систем.
 
-Bachelor's diploma project — School of Information and Communication Technology, MUST.
+Бакалаврын дипломын ажил — ШУТИС, Мэдээлэл, Харилцаа Холбооны Технологийн Сургууль.
 
 ---
 
-## Project structure
+## Ангилалууд
+
+| Ангилал | Тайлбар |
+|---------|---------|
+| 🟢 Эерэг | Магтаал, талархал, дэмжлэг |
+| ⚪ Саармаг | Мэдээлэл дамжуулах, хэлэлцүүлэг |
+| 🔵 Бүтээлч шүүмжлэл | Шүүмжлэлтэй боловч үндэслэлтэй |
+| 🔴 Хортой сөрөг | Доромжлол, гүтгэлэг, хүчирхийлэл |
+
+---
+
+## Өгөгдлийн эх үүсвэр
+
+- **news.mn** — мэдээний сайтын сэтгэгдэл
+- **gogo.mn** — мэдээний сайтын сэтгэгдэл
+- **Facebook** — нийгмийн сүлжээний сэтгэгдэл
+
+Нийт **10,000** гараар шошголсон сэтгэгдэл ашигласан.
+
+---
+
+## Төслийн бүтэц
 
 ```
 diploma/
-├── mongolian-scraper/      # news.mn and gogo.mn comment scrapers (Selenium)
-├── facebookmnscraper/      # Facebook public comment scraper (Playwright)
-├── annotation/             # Random sampling for manual labelling batches
-├── cleaning_data/          # Raw comment cleaning pipeline
-├── preprocessing/          # Cyrillic validation, tokenisation, stop-word removal
-├── sample scores/
-│   ├── project/src/        # Baseline models (LR, NB, SVM) + MN-BERT training
-│   ├── step2_retrain_v*.py # Iterative retraining with label fixes (v3–v9)
-│   ├── train_mnbert_4class.py  # Final flat 4-class fine-tuning script
-│   └── mnbert_4class.ipynb     # Training notebook
-└── gradio_app/             # Inference web app (Gradio)
+├── data/
+│   ├── scrapers/
+│   │   ├── web/              # news.mn, gogo.mn хусагч (Selenium)
+│   │   └── facebook/         # Facebook хусагч (Playwright)
+│   ├── annotation/           # Шошгололтын дээжийн скриптүүд
+│   └── preprocessing/        # Өгөгдөл цэвэрлэх, нормчлох
+│
+├── training/
+│   ├── config.py             # Сургалтын тохиргоо
+│   ├── data_prep.py          # Өгөгдөл бэлтгэх
+│   ├── baselines/            # TF-IDF + LR / NB / SVM суурь загварууд
+│   ├── bert/                 # MN-BERT сургалтын скриптүүд (v1–v7)
+│   ├── pipeline/             # Хоёр шатлалт ангилагч
+│   └── experiments/          # Туршилтын итерациуд (v3–v9)
+│
+├── evaluation/               # Үнэлгээ, алдаа шинжилгээ, тайлан
+├── inference/                # Gradio веб интерфэйс
+├── notebooks/                # Jupyter тэмдэглэл
+├── requirements.txt
+└── .gitignore
 ```
 
-## Quickstart — inference app
+---
+
+## Хурдан эхлэх
 
 ```bash
-pip install -r gradio_app/requirements.txt
-python -m gradio_app.app
+pip install -r requirements.txt
 ```
 
-Requires fine-tuned model weights in the paths defined in `gradio_app/config.py`.
+### MN-BERT сургах
 
-## Training pipeline
-
-```
-Sprint 1  mongolian-scraper / facebookmnscraper   — data collection
-Sprint 2  annotation / cleaning_data / preprocessing — data prep
-Sprint 3  sample scores/project/src/train_baselines.py — TF-IDF baselines
-Sprint 4  sample scores/project/src/train_bert_v1.py  — MN-BERT v1
-Sprint 5  sample scores/step2_retrain_v3..v6.py        — iterative fixes
-Sprint 6  sample scores/step2_retrain_v7*.py           — best model (v7)
-Sprint 7  sample scores/train_mnbert_4class.py         — flat 4-class
-Sprint 8  sample scores/generate_eda.py + project/src/analyze_errors.py
-Sprint 9  gradio_app/                                  — web interface
+```bash
+python training/bert/train_bert_v7.py
 ```
 
-## Dataset
+### Веб интерфэйс ажиллуулах
 
-- **10,000 manually labelled** Mongolian social media comments
-- Sources: news.mn, gogo.mn, Facebook
-- Inter-annotator agreement: Cohen's κ = 0.72
-- Label distribution: Constructive 45.8% · Neutral 29.0% · Toxic 18.7% · Positive 6.5%
+```bash
+python inference/app.py
+```
 
-## Results
+---
 
-| Model | Accuracy | Macro-F1 |
-|-------|----------|----------|
-| TF-IDF + LogisticRegression | ~65% | ~0.61 |
+## Өгөгдлийн статистик
+
+| Ангилал | Тоо | Хувь |
+|---------|-----|------|
+| Бүтээлч шүүмжлэл | 4,582 | 45.8% |
+| Саармаг | 2,898 | 29.0% |
+| Хортой сөрөг | 1,870 | 18.7% |
+| Эерэг | 650 | 6.5% |
+| **Нийт** | **10,000** | **100%** |
+
+---
+
+## Загварын үр дүн
+
+| Загвар | Accuracy | Macro F1 |
+|--------|----------|----------|
+| TF-IDF + Logistic Regression | ~65% | ~0.61 |
 | TF-IDF + LinearSVC | ~67% | ~0.63 |
-| MN-BERT (flat 4-class, v7) | **81.4%** | **0.776** |
+| MN-BERT v1 (суурь) | ~76% | ~0.74 |
+| **MN-BERT v7 (aug + preproc)** | **81.4%** | **0.776** |
+| Хоёр шатлалт загвар | ~81% | ~0.79 |
 
-## Requirements
+---
+
+## Технологийн стек
 
 - Python 3.10+
-- PyTorch + torch-directml (AMD GPU) or CUDA
-- transformers, gradio, scikit-learn, pandas, selenium, playwright
+- [MN-BERT](https://huggingface.co/tugstugi/bert-base-mongolian-cased) — Монгол хэлний BERT
+- HuggingFace Transformers · PyTorch
+- Selenium · Playwright — веб хусагч
+- Gradio — inference интерфэйс
+- scikit-learn · pandas · numpy
