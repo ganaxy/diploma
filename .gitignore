@@ -92,6 +92,13 @@ DIPLOMA_ROADMAP_APRIL2026.txt
 *.jpg
 *.png.bak
 
+# ── Scripts that reference external annotation APIs ──────────────────────
+submit_batch.py
+collect_results.py
+batch_tracker.json
+*.retry.csv
+*.errors.json
+
 # ── Misc ──────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
