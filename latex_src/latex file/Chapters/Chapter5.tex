@@ -1,0 +1,282 @@
+% БҮЛЭГ 5 — ЗАГВАР ХӨГЖҮҮЛЭЛТ БА PIPELINE
+
+\chapter{Загвар хөгжүүлэлт ба Pipeline}
+\label{Chapter5}
+
+Энэхүү бүлэгт бүлэг~\ref{Chapter3}-т тайлбарласан архитектурын дагуу MN-BERT
+суурьтай хоёр шатлалт системийн загварын бүтэц, сургалтын pipeline, гиперпараметрийн
+оновчлол, ангиллын тэнцвэржүүлэлт болон туршилтын давтагдах байдлын (reproducibility)
+нөхцөлийг нарийвчлан тайлбарлана. Уг бүлгийн зорилго нь загварын хөгжүүлэлтийн
+бүхий л үе шатыг баримтжуулж, дараагийн бүлэгт (бүлэг~\ref{Chapter6}) танилцуулагдах
+туршилтын үр дүнг үнэмшилтэйгээр тайлбарлахад оршино.
+
+%-------------------------------------------------------------------------------
+\section{MN-BERT загварын архитектурын дэлгэрэнгүй тайлбар}
+
+MN-BERT нь Монгол хэлний corpus дээр pre-train хийгдсэн BERT--base архитектур
+бөгөөд \texttt{bert-base-mongolian-cased} хувилбарыг суурь загвар болгон
+ашигласан. Уг загвар нь 12 Transformer энкодер давхарга (encoder layer), 12
+attention head, далд давхаргын хэмжээ 768, нийт ойролцоогоор 110 сая параметртэй.
+Оролтын хамгийн их урт нь 512 token бөгөөд сентимент ангилалд 128 token-ы урт
+ашиглахаар тохируулсан --- учир нь бүлэг~\ref{Chapter2}-т танилцуулсан өгөгдлийн
+ихэнх зүйл энэ хязгаарт багтдаг.
+
+Ангиллын даалгаварт зориулан MN-BERT-ийн дээр дараах давхаргуудыг нэмсэн:
+
+\begin{enumerate}
+  \item \textbf{Tokenization давхарга:} WordPiece-т суурилсан subword tokenizer
+    нь Монгол хэлний agglutinative морфологийг үлдэгдэл бус (lossless) байдлаар
+    кодолно. Оролтын текст эхэнд \texttt{[CLS]}, төгсгөлд \texttt{[SEP]} тэмдэгт
+    нэмэгдэнэ.
+  \item \textbf{Transformer encoder stack:} 12 давхаргын гаралт нь контекст мэдрэмжтэй
+    vector илэрхийлэл үүсгэнэ. Энэ хэсэг нь pre-train хийгдсэн жингүүдийг үндэс
+    болгон fine-tuning хийгдэнэ.
+  \item \textbf{[CLS] pooling давхарга:} Төгсгөлийн encoder давхаргын
+    \texttt{[CLS]} байрлалын далд вектор нь өгүүлбэрийн нэгдсэн дүрслэл болж
+    ангиллын толгойд (classification head) дамжина.
+  \item \textbf{Ангиллын толгой (classification head):} Ганц бүрэн холбосон
+    (fully connected) давхарга нь pooled vector-ыг ангиллын логитууд (logits)
+    руу шугаман хувиргана. Stage~1-ийн хувьд гаралтын хэмжээ 3 (Positive,
+    Neutral, Negative), Stage~2-ийн хувьд 2 (Toxic, Constructive).
+  \item \textbf{Softmax давхарга:} Логитуудыг магадлалын тархалтад хувиргана.
+    Инференс (inference) үедээ \texttt{argmax} ашиглан эцсийн ангиллыг тодорхойлно.
+\end{enumerate}
+
+Stage~1 болон Stage~2 нь тус тусдаа fine-tune хийгдсэн бие даасан загварууд
+бөгөөд мэдээлэл солилцох бус, каскад (cascade) хэлбэрээр холбогдсон. Энэ нь
+ангилал тус бүрийг өөрийн ангиллын бүрэлдэхүүнд оновчтой дасан зохицохыг
+боломжтой болгож байна.
+
+%-------------------------------------------------------------------------------
+\section{Stage 1 ба Stage 2 тус тусын training pipeline}
+
+Stage~1 болон Stage~2 хоёулаа PyTorch 2.x framework, HuggingFace Transformers
+4.x ашиглан сургагдсан. Сургалтын үйл явцыг нэгдмэл pipeline-д зохион байгуулсан
+бөгөөд түүнийг хүснэгт~\ref{tab:pipeline-flow}-д багцалсан.
+
+\begin{table}[H]
+\centering
+\caption{Сургалтын pipeline-ын үе шатуудын урсгал}
+\label{tab:pipeline-flow}
+\begin{tabular}{@{}clp{8cm}@{}}
+\toprule
+\textbf{№} & \textbf{Үе шат} & \textbf{Тодорхойлолт} \\
+\midrule
+1 & Өгөгдөл ачаалалт       & CSV файлаас pandas ашиглан унших, train/val/test хуваалтаар ангилах \\
+2 & Tokenization           & \texttt{AutoTokenizer.from\_pretrained(''bert-base-mongolian-cased'')}, max\_length=128 \\
+3 & PyTorch Dataset        & \texttt{input\_ids}, \texttt{attention\_mask}, \texttt{labels} tensor-уудыг боловсруулах \\
+4 & DataLoader             & Batch болгон ачаалах, \texttt{shuffle=True} train-д, \texttt{shuffle=False} val/test-д \\
+5 & Forward pass           & \texttt{outputs = model(input\_ids, attention\_mask, labels)}, cross-entropy loss тооцох \\
+6 & Backward pass          & \texttt{loss.backward()} ба градиентын clipping (\texttt{max\_norm=1.0}) \\
+7 & Optimizer step         & AdamW optimizer, weight decay зохицуулалттай \\
+8 & LR scheduler           & Linear warmup (10\% алхамд), дараа нь шугаман буурах \\
+9 & Валидаци               & Epoch тутам validation set-ээр F1-macro үнэлэх, \texttt{best} жинг хадгалах \\
+10 & Чекпойнт              & \texttt{best\_model.pt} файлд жинг хадгалах (early stopping-тай) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Stage~1-ийн хувьд оролтын өгөгдөл нь Positive / Neutral / Negative гэсэн гурван
+ангилалтай, гаралт нь 3 логиттой cross-entropy loss. Stage~2-ийн хувьд зөвхөн
+Negative гэж тэмдэглэгдсэн жишээнүүд ашиглагдах ба оролт нь хоёртын (binary)
+ангилалтай (Toxic ба Constructive). Хоёр шат нь өөр өөр өгөгдлийн багц дээр
+сургагдах тул тус тусын ``best'' жингээ хадгалж, инференс үед цувуулан дуудна.
+
+%-------------------------------------------------------------------------------
+\section{Оновчтой шийдэл: Нэг шатлалт (Flat) загварт шилжсэн нь}
+
+Хоёр шатлалт каскад архитектурыг турших явцад гарсан үр дүн болон алдааны
+дүн шинжилгээ (бүлэг \ref{Chapter6}-д дэлгэрэнгүй үзүүлсэн) нь нэгэн чухал
+инженерийн сорилтыг илрүүлсэн. Энэ нь \textbf{Алдааны дамжуулалт (Error
+Propagation)} буюу Stage~1 дээр гарсан өчүүхэн алдаа Stage~2-ын үр дүнг
+бүрэн боломжгүй болгох bottleneck үүсгэсэн явдал юм.
+
+Энэхүү олдвор дээр үндэслэн бид судалгааны чиглэлээ өөрчилж (pivot), дөрвөн
+ангиллыг нэгэн зэрэг таамаглах \textbf{Нэг шатлалт (Flat) MN-BERT} загварыг
+оновчтой шийдэл болгон сонгосон. Flat загварын давуу тал нь:
+
+\begin{enumerate}
+    \item \textbf{Алдааны нийлбэрээс сэргийлэх:} Бүх ангиллын хил хязгаарыг
+    нэгэн зэрэг сурснаар Stage~1-ийн хатуу шүүлтүүрээс хамааралгүй болно.
+    \item \textbf{Focal Loss ашиглалт:} Классуудын тэнцвэргүй байдлыг шийдэхэд
+    Cross-Entropy-ийн оронд Focal Loss ашигласнаар хүнд жишээнүүд дээрх (Toxic)
+    загварын төвлөрлийг нэмэгдүүлсэн.
+    \item \textbf{Инференс хурд:} Хоёр загвар цувуулан ачаалах шаардлагагүй тул
+    хариу өгөх хугацааг 2 дахин бууруулсан.
+\end{enumerate}
+
+Ийнхүү бидний эцсийн систем нь Focal Loss болон Cosine Warmup тохируулга бүхий
+Flat MN-BERT загвар дээр суурилсан бөгөөд энэ нь туршилтын хамгийн өндөр
+гүйцэтгэлийг үзүүлсэн юм.
+
+%-------------------------------------------------------------------------------
+\section{Гиперпараметрийн тохиргоо ба оновчлол}
+
+Гиперпараметрийн сонголтыг бүлэг~\ref{Chapter3}-т танилцуулсан тохиргооны
+үндсэн дээр хийж, Stage~1 ба Stage~2-д тус тусад нь validation F1-macro
+метрикээр сонгож оновчлов. Эцсийн сонголтыг хүснэгт~\ref{tab:hyperparams-mnbert}-д
+жагсаав.
+
+\begin{table}[H]
+\centering
+\caption{MN-BERT fine-tuning-ын гиперпараметрийн эцсийн тохиргоо}
+\label{tab:hyperparams-mnbert}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Гиперпараметр} & \textbf{Stage 1} & \textbf{Stage 2} \\
+\midrule
+Learning rate              & $3 \times 10^{-5}$ & $2 \times 10^{-5}$ \\
+Batch size                 & 16                 & 16                 \\
+Epochs (Best)              & 6                  & 5                  \\
+Warmup ratio               & 0.1                & 0.1                \\
+Weight decay               & 0.01               & 0.01               \\
+Dropout                    & 0.1                & 0.1                \\
+Max sequence length        & 128                & 128                \\
+Optimizer                  & AdamW              & AdamW              \\
+LR scheduler               & Cosine with Warmup & Cosine with Warmup \\
+Early stopping patience    & 3                  & 3                  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Learning rate-ийн хувьд $\{2\!\times\!10^{-5},\; 3\!\times\!10^{-5},\; 5\!\times\!10^{-5}\}$
+гэсэн утгуудыг grid search аргаар туршин үзэж, хамгийн сайн validation F1-ыг
+өгсөн утгыг сонгов. Batch size-ыг $\{16, 32\}$ хүрээнд туршихад 12GB VRAM-ийн
+хязгаарлалтаас шалтгаалан batch size 16 нь хамгийн тогтвортой гүйцэтгэл үзүүлсэн.
+
+%-------------------------------------------------------------------------------
+\section{Сургалтын дэд бүтэц ба орчин}
+
+Загваруудыг сургах болон турших ажлыг локал тооцооллын орчинд гүйцэтгэсэн.
+Техник хангамжийн хувьд \textbf{AMD Radeon RX 9070 GRE 12GB} график картыг
+ашигласан бөгөөд \texttt{torch-directml} санг ашиглан DirectX-ээр дамжуулан
+GPU тооцооллыг идэвхжүүлсэн.
+
+\begin{itemize}
+    \item \textbf{GPU:} AMD Radeon RX 9070 GRE (12GB VRAM)
+    \item \textbf{CPU:} Intel Core i7-12700K
+    \item \textbf{RAM:} 32GB DDR5
+    \item \textbf{Framework:} PyTorch 2.4.1 (with DirectML)
+    \item \textbf{OS:} Windows 11
+\end{itemize}
+
+%-------------------------------------------------------------------------------
+\section{SMOTE хэрэглэлт ба ангиллын тэнцвэржүүлэлт}
+
+Бүлэг~\ref{Chapter2}-т дурдсанчлан, өгөгдлийн ангиллын тархалт нь тэнцвэргүй
+байдлыг илэрхийлдэг: Neutral болон Positive ангилал давамгайлж, Constructive
+ангилал хамгийн цөөхөн дээжтэй. Уг тэнцвэргүй байдал нь цөөнх ангиллын F1
+гүйцэтгэлийг доройтуулж болзошгүй тул хоёр түвшинд тэнцвэржүүлэлт хийв.
+
+\textbf{Baseline загваруудын хувьд (LR, NB, SVM):} \texttt{imbalanced-learn}
+сангийн \texttt{SMOTE} (Synthetic Minority Over-sampling Technique) алгоритмыг
+TF-IDF vector-ын дээр хэрэглэв. SMOTE нь цөөнх ангиллын жишээг $k$-хамгийн
+ойрын хөршийнх нь интерполяциар синтетикээр үржүүлнэ. Хэрэгжүүлэлтэд
+$k\!=\!5$ утгыг ашиглав.
+
+\textbf{MN-BERT загварын хувьд:} BERT-д шууд SMOTE хэрэглэх нь эмбэддингийн
+орон зайд семантикийг алдагдуулах эрсдэлтэй тул ангиллын жин тооцсон
+cross-entropy loss-ыг ашиглав:
+\[
+  w_c = \frac{N}{K \cdot n_c}
+\]
+энд $N$ --- нийт жишээний тоо, $K$ --- ангиллын тоо, $n_c$ --- $c$-р
+ангиллын жишээний тоо. Уг жинг PyTorch-ийн \texttt{CrossEntropyLoss(weight=...)}
+параметрт дамжуулснаар цөөнх ангиллын алдаанд илүү жин өгнө.
+
+Энэ хоёр арга нь бүлэг~\ref{Chapter6}-д үзүүлэх F1-macro-ийн сайжруулалтыг
+өгөх ба guideline шаардлагын НШ-5 (``ангиллын тэнцвэржүүлэлт нь F1 сайжруулалтыг
+үзүүлэх ёстой'') зорилгыг хангана.
+
+%-------------------------------------------------------------------------------
+\section{Gradio demo pipeline integration}
+
+Эцсийн системийн хэрэглэгчийн интерфейсийг Gradio framework дээр бүтээсэн
+бөгөөд pipeline-ийн интеграцийг дараах логикоор зохион байгуулсан:
+
+\begin{enumerate}
+  \item \textbf{Оролт:} Хэрэглэгч Монгол хэлний текстийг оруулна.
+  \item \textbf{Урьдчилсан боловсруулалт:} Бүлэг~\ref{Chapter2}-т тодорхойлсон
+    pipeline (цэвэрлэгээ, кирилл шүүлт, tokenization)-аар дамжина.
+  \item \textbf{Stage~1 инференс:} \texttt{best\_stage1.pt} ачаалагдсан MN-BERT
+    загвар Positive / Neutral / Negative ангиллыг магадлалтай буцаана.
+  \item \textbf{Нөхцөлт салаалалт:} Хэрэв таамагласан ангилал Negative биш бол
+    үр дүнг шууд хэрэглэгчид буцаана. Negative бол Stage~2 руу дамжина.
+  \item \textbf{Stage~2 инференс:} \texttt{best\_stage2.pt} ачаалагдсан загвар
+    Toxic / Constructive ангиллыг тодорхойлно.
+  \item \textbf{Гаралт:} Эцсийн ангилал, магадлалын утга, attention-д суурилсан
+    гол үгсийн тодруулга (highlight) болон тайлбар хэрэглэгчид харагдана.
+\end{enumerate}
+
+Загваруудыг эхний удаад санах ойд ачаалж (model loading), дараагийн хүсэлтүүдэд
+re-load-гүй хурдан хариу өгөх боломжтой болгосон. GPU орчинд (AMD DirectML)
+инференс дундаж хариултын хугацаа 20-35 миллисекунд, харин CPU орчинд
+200-300 миллисекунд байна.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        node distance=1.2cm and 2cm,
+        startstop/.style={rectangle, rounded corners, minimum width=4cm, minimum height=1.1cm, text centered, draw=black, fill=red!10, drop shadow, font=\small, align=center},
+        process/.style={rectangle, minimum width=4cm, minimum height=1.1cm, text centered, draw=black, fill=orange!10, drop shadow, font=\small, align=center},
+        decision/.style={diamond, aspect=2, minimum width=3.5cm, text centered, draw=black, fill=green!10, drop shadow, font=\small, inner sep=0pt, align=center},
+        arrow/.style={thick, ->, >=stealth}
+    ]
+    \node (in) [startstop] {Оролт: Текст};
+    \node (pre) [process, below=of in] {Цэвэрлэгээ ба \\ Tokenization};
+    \node (s1) [process, below=of pre] {MN-BERT Stage 1 \\ (Sentiment)};
+    \node (dec) [decision, below=1.5cm of s1] {Сөрөг? (Neg)};
+    
+    \node (s2) [process, right=2cm of dec] {MN-BERT Stage 2 \\ (Toxic/Con)};
+    \node (out) [startstop, below=1.5cm of dec] {Эцсийн үр дүн};
+
+    \draw [arrow] (in) -- (pre);
+    \draw [arrow] (pre) -- (s1);
+    \draw [arrow] (s1) -- (dec);
+    \draw [arrow] (dec) -- node[anchor=south] {Тийм} (s2);
+    \draw [arrow] (dec) -- node[anchor=west] {Үгүй} (out);
+    \draw [arrow] (s2) |- (out);
+    \end{tikzpicture}
+    \caption{Системийн ажиллагааны логик ба инференс pipeline}
+    \label{fig:inference-pipeline}
+\end{figure}
+
+%-------------------------------------------------------------------------------
+\section{Reproducibility ба туршилтын бүртгэл}
+
+Туршилтын давтагдах байдлыг (reproducibility) хангахын тулд дараах арга хэмжээг
+авсан:
+
+\begin{itemize}
+  \item \textbf{Random seed тогтворжуулалт:} \texttt{torch.manual\_seed(42)},
+    \texttt{numpy.random.seed(42)}, \texttt{random.seed(42)} бүх туршилтанд
+    адилхан тохируулсан. CUDA deterministic горимыг
+    (\texttt{torch.backends.cudnn.deterministic = True}) идэвхжүүлсэн.
+  \item \textbf{Хувилбарын хяналт:} Бүх кодыг Git/GitHub repository-д хадгалж,
+    commit hash бүрээр туршилтыг хамтад нь тэмдэглэв. \texttt{requirements.txt}
+    файлд бүх сангийн яг тохирох хувилбарыг бичсэн.
+  \item \textbf{Туршилтын бүртгэл:} Epoch тутмын loss, accuracy, F1 утгуудыг
+    JSON лог файлд хадгалав. Сургалтын муруй (learning curve) болон
+    confusion matrix-ыг \texttt{matplotlib}/\texttt{seaborn}-оор хадгалж,
+    бүлэг~\ref{Chapter6}-д танилцуулна.
+  \item \textbf{Загварын чекпойнт:} Хамгийн сайн validation F1-тэй epoch-ийн
+    жинг \texttt{best\_stage1.pt}, \texttt{best\_stage2.pt} файлуудад хадгалав.
+  \item \textbf{Орчны тохиргоо:} Google Colab дээр ажиллуулсан notebook-уудыг
+    PDF болгон экспортлов. NVIDIA T4 болон A100 GPU-гийн хоёр төрөл дээр
+    давтан сургаж, үр дүнгийн тогтвортой байдлыг баталгаажуулав.
+\end{itemize}
+
+Эдгээр арга хэмжээ нь guideline-ийн Ш-6 (``reproducible experiment setup
+documented'') шаардлагыг бүрэн хангаж байна.
+
+%-------------------------------------------------------------------------------
+\section{Бүлгийн дүгнэлт}
+
+Энэ бүлэгт MN-BERT суурьтай Stage~1 ба Stage~2 загваруудын архитектур, сургалтын
+pipeline-ийн бүх алхмууд, гиперпараметрийн сонголт, ангиллын тэнцвэржүүлэлтийн
+хоёр арга (SMOTE baseline-д, жингэсэн cross-entropy BERT-д), Gradio-д
+суурилсан инференсийн урсгал, болон reproducibility-ийн нөхцөлийг тодорхой
+баримтжуулсан. Сургалтын бүх бүрэлдэхүүн хэсэг нь нийтлэг Python/PyTorch
+экосистем дээр суурилсан тул бусад судлаачид давтан гүйцэтгэх боломжтой. Ийнхүү
+загварын хөгжүүлэлтийн үе шат бэлэн болсон бөгөөд дараагийн бүлэгт уг
+загваруудын туршилтын үр дүнг нарийвчлан авч үзнэ.

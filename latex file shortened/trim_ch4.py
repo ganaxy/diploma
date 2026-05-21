@@ -1,0 +1,140 @@
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
+
+with open('Chapters/Chapter4.tex', encoding='utf-8') as f:
+    lines = f.readlines()
+
+# Lines 28-43 (0-indexed) are the two verbose paragraphs.
+# We'll keep: up to line 27, then a blank line, then we resume at line 44
+# But we also need to insert a condensed replacement text.
+# Read replacement from inline multiline string.
+
+# The replacement lines (condensed version of the 15 lines we're removing):
+repl = lines[28][:0]  # empty base of same type
+
+# Build condensed paragraph from existing substrings + new connections:
+# 1st replacement line: "Мэдээний сайтын ... бол"  — use start of line 28 + new connector
+line28_start = lines[28][:12]  # "Мэдээний сай"
+
+# Actually let's just build the text char by char from what we need
+# First let's identify what each line 28-43 contains and build replacement
+
+# Simply: slice out lines 28-43, keep 27 and 44 onwards
+# Insert a new 5-line condensed block using the data from the removed lines
+
+# Take key data points from removed lines:
+# - "news.mn, gogo.mn, IKON.mn" from line 28
+# - "бичгийн хэлний шинжтэй" from line 29-30
+# - "Facebook" group mention from line 30-34
+# - "2025--2026" from line 42
+# - "stratified sampling" from line 43
+
+# Extract key phrases:
+src28 = lines[28]  # "Мэдээний сайтуудын (news.mn, gogo.mn, IKON.mn гэх мэт) сэтгэ..."
+src39 = lines[39]  # "Цуглуулалтын техникийн хувьд: news.mn-ийн..."
+
+# Build new paragraph: 4 lines
+# Line A: "Мэдээний сайтын сэтгэгдлд бичгийн хэлний шинжтэй урт текстүүд зонхилох бол"
+#         → take "Мэдээний сайт" from line 28, rest is new
+lineA = src28[:10] + src28[10:14].replace(
+    src28[10:14], src28[10] + src28[11]  # keep "ын"
+) + '\n'
+# This is getting too complex. Let's just write the replacement as raw bytes.
+
+# Write replacement as encoded bytes directly
+repl_text = (
+    b'\xd0\x9c\xd1\x8d\xd0\xb4\xd1\x8d\xd1\x8d\xd0\xbd\xd0\xb8\xd0\xb9'  # Мэдээний
+    b'\x20'
+    b'\xd1\x81\xd0\xb0\xd0\xb9\xd1\x82\xd0\xbd\xd1\x8b\xd0\xbd'  # сайтын
+    b'\x20'
+    b'\xd1\x81\xd1\x8d\xd1\x82\xd0\xb3\xd1\x8d\xd0\xb3\xd0\xb4\xd0\xbb\xd0\xb4'  # сэтгэгдлд
+    b'\x20'
+    b'\xd0\xb1\xd0\xb8\xd1\x87\xd0\xb3\xd0\xb8\xd0\xb9\xd0\xbd'  # бичгийн
+    b'\x20'
+    b'\xd1\x85\xd1\x8d\xd0\xbb\xd0\xbd\xd0\xb8\xd0\xb9'  # хэлний
+    b'\x20'
+    b'\xd1\x88\xd0\xb8\xd0\xbd\xd0\xb6\xd1\x82\xd1\x8d\xd0\xb9'  # шинжтэй
+    b'\x20'
+    b'\xd1\x83\xd1\x80\xd1\x82'  # урт
+    b'\x20'
+    b'\xd1\x82\xd0\xb5\xd0\xba\xd1\x81\xd1\x82\xd2\xaf\xd2\xaf\xd0\xb4'  # текстүүд
+    b'\x20'
+    b'\xd0\xb7\xd0\xbe\xd0\xbd\xd1\x85\xd0\xb8\xd0\xbb\xd0\xbe\xd1\x85'  # зонхилох
+    b'\x20'
+    b'\xd0\xb1\xd0\xbe\xd0\xbb'  # бол
+    b'\x20'
+    b'\x46\x61\x63\x65\x62\x6f\x6f\x6b'  # Facebook
+    b'\x20'
+    b'\xd0\xb3\xd1\x80\xd1\x83\xd0\xbf\xd0\xbf\xd0\xb8\xd0\xb9\xd0\xbd'  # группийн
+    b'\x20'
+    b'\xd1\x81\xd1\x8d\xd1\x82\xd0\xb3\xd1\x8d\xd0\xb3\xd0\xb4\xd0\xbb\xd0\xb4'  # сэтгэгдлд
+    b'\x20'
+    b'\xd1\x8f\xd1\x80\xd0\xb8\xd0\xb0\xd0\xbd\xd1\x8b\xd0\xbd'  # ярианын
+    b'\x20'
+    b'\xd1\x85\xd1\x8d\xd0\xbb\x2c'  # хэл,
+    b'\x20'
+    b'\x65\x6d\x6f\x6a\x69'  # emoji
+    b'\x20'
+    b'\xd0\xb0\xd0\xb3\xd1\x83\xd1\x83\xd0\xbb\xd1\x81\xd0\xb0\xd0\xbd'  # агуулсан
+    b'\x20'
+    b'\xd0\xb1\xd0\xbe\xd0\xb3\xd0\xb8\xd0\xbd\xd0\xbe'  # богино
+    b'\x20'
+    b'\xd0\xb1\xd0\xb8\xd1\x87\xd0\xbb\xd1\x8d\xd0\xb3'  # бичлэг
+    b'\x20'
+    b'\xd0\xb4\xd0\xb0\xd0\xb2\xd0\xb0\xd0\xbc\xd0\xb3\xd0\xb0\xd0\xb9\xd0\xbb\xd0\xb0\xd1\x85'  # давамгайлах
+    b'\x0a'  # newline
+    b'\xd0\xbd\xd1\x8c'  # нь
+    b'\x20'
+    b'\xd3\xaf\xd0\xb3\xd0\xb4\xd0\xb2\xd3\xb3\xd0\xbb\xd0\xb8\xd0\xb9\xd0\xbd'  # өгдвлийн
+    b'\x20'
+    b'\xd0\xbe\xd0\xbb\xd0\xbe\xd0\xbd'  # олон
+    b'\x20'
+    b'\xd1\x82\xd0\xb0\xd0\xbb\xd1\x82'  # талт
+    b'\x20'
+    b'\xd0\xb1\xd0\xb0\xd0\xb9\xd0\xb4\xd0\xbb\xd1\x8b\xd0\xb3'  # байдлыг
+    b'\x20'
+    b'\xd1\x85\xd0\xb0\xd0\xbd\xd0\xb3\xd0\xb0\xd0\xbd\xd0\xb0\x2e'  # хангана.
+    b'\x20'
+    b'\xd0\xa6\xd1\x83\xd0\xb3\xd0\xbb\xd1\x83\xd1\x83\xd0\xbb\xd0\xb0\xd0\xbb\xd1\x82\xd1\x8b\xd0\xb3'  # Цуглуулалтыг
+    b'\x20'
+    b'\x77\x65\x62\x20\x73\x63\x72\x61\x70\x69\x6e\x67'  # web scraping
+    b'\x20\x28'
+    b'\xd0\xbc\xd1\x8d\xd0\xb4\xd1\x8d\xd1\x8d\xd0\xbd\xd0\xb8\xd0\xb9'  # мэдээний
+    b'\x0a'  # newline
+    b'\xd1\x81\xd0\xb0\xd0\xb9\xd1\x82\xd1\x83\xd1\x83\xd0\xb4\x29'  # сайтууд)
+    b'\x20'
+    b'\xd0\xb1\xd0\xbe\xd0\xbb\xd0\xbe\xd0\xbd'  # болон
+    b'\x20'
+    b'\xd0\xbd\xd0\xb8\xd0\xb9\xd1\x82\xd0\xbb\xd0\xb8\xd0\xb9\xd0\xbd'  # нийтлийн
+    b'\x20'
+    b'\x47\x72\x61\x70\x68\x20\x41\x50\x49\x20\x28\x46\x61\x63\x65\x62\x6f\x6f\x6b\x29\x2d'  # Graph API (Facebook)-
+    b'\xd1\x8d\xd1\x8d\xd1\x80'  # ээр
+    b'\x20'
+    b'\xd1\x85\xd1\x8d\xd1\x80\xd1\x8d\xd0\xb3\xd0\xb6\xd2\xaf\xd2\xaf\xd0\xbb\xd0\xb6\x2c'  # хэрэгжүүлж,
+    b'\x20'
+    b'\x32\x30\x32\x35\x2d\x2d\x32\x30\x32\x36'  # 2025--2026
+    b'\x20'
+    b'\xd0\xbe\xd0\xbd\xd1\x8b'  # оны
+    b'\x0a'  # newline
+    b'\xd0\xbd\xd1\x8b\xd0\xb9\xd1\x82\xd0\xbb\xd1\x8d\xd0\xbb\xd1\x8d\xd2\xaf\xd0\xb4\xd1\x8b\xd0\xb3'  # нийтлэлүүдийг
+    b'\x20'
+    b'\x73\x74\x72\x61\x74\x69\x66\x69\x65\x64\x20\x73\x61\x6d\x70\x6c\x69\x6e\x67\x2d'  # stratified sampling-
+    b'\xd0\xb0\xd0\xb0\xd1\x80'  # аар
+    b'\x20'
+    b'\xd1\x86\xd1\x83\xd0\xb3\xd0\xbb\xd1\x83\xd1\x83\xd0\xbb\xd1\x81\xd0\xb0\xd0\xbd\x2e\x0a'  # цуглуулсан.\n
+)
+
+repl_str = repl_text.decode('utf-8')
+new_lines = lines[:28] + [repl_str] + lines[44:]
+
+with open('Chapters/Chapter4.tex', 'w', encoding='utf-8') as f:
+    f.writelines(new_lines)
+
+print('Done. Lines before:', len(lines), 'Lines after:', len(new_lines))
+# Verify the replacement
+with open('Chapters/Chapter4.tex', encoding='utf-8') as f:
+    content = f.read()
+# Check some key text
+import re
+m = re.search(r'Мэдээний сайтын', content)
+print('Found condensed text:', m is not None)

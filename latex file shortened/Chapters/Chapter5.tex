@@ -1,0 +1,210 @@
+﻿% БҮЛЭГ 5 — ЗАГВАР ХӨГЖҮҮЛЭЛТ БА PIPELINE
+
+\chapter{Загвар хөгжүүлэлт ба дамжлага}
+\label{Chapter5}
+
+Энэхүү бүлэгт MN-BERT суурьтай системийн сургалтын дамжлага, гиперпараметр, тэнцвэржүүлэлт, давтагдах байдлын нөхцөлийг баримтжуулна.
+
+%-------------------------------------------------------------------------------
+\section{MN-BERT загварын архитектурын дэлгэрэнгүй тайлбар}
+
+MN-BERT (\texttt{bert-base-mongolian-cased}) нь 12 layer, 768 hidden, 12 head, $\approx$110M параметртэй BERT-base бөгөөд оролтын урт $256$ token (медиан $29$, 99 дүгээр перцентиль $135$).
+
+MN-BERT-ийн нэг Transformer энкодер блокийн дотоод бүтэц болон нарийн тохируулгатай ангиллын толгойн дэлгэрэнгүй диаграмыг зураг~\ref{fig:bert-detail}-д харуулав.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  mainbox/.style={draw, rounded corners=4pt, minimum width=7.0cm,
+                  minimum height=1.20cm, text width=6.6cm,
+                  align=center, font=\small, line width=0.8pt},
+  arr/.style={->, >=Stealth, thick},
+  resarr/.style={->, >=Stealth, dashed, gray!60, line width=0.9pt}
+]
+
+% ── INPUT EMBEDDING ──────────────────────────────────────────────────────
+\node[mainbox, fill=gray!12] (inp) at (0, 0)
+  {Input Embeddings \quad ($\mathbb{R}^{768}$)\\[2pt]
+   {\scriptsize Token + Position + Segment}};
+
+% ── TRANSFORMER BLOCK BORDER ─────────────────────────────────────────────
+\draw[dashed, rounded corners=6pt, fill=blue!3, draw=blue!40, line width=1pt]
+  (-3.8,-0.80) rectangle (3.8,-8.90);
+\node[font=\footnotesize\itshape, text=blue!60, anchor=north west]
+  at (-3.75,-0.86) {Transformer encoder block ($\times 12$)};
+
+% ── MULTI-HEAD ATTENTION ─────────────────────────────────────────────────
+\node[mainbox, fill=blue!14] (mha) at (0,-2.00)
+  {Multi-Head Self-Attention\\[2pt]
+   {\scriptsize 12 heads, $d_k = 64$}};
+
+% ── ADD & LAYER NORM 1 ───────────────────────────────────────────────────
+\node[mainbox, fill=yellow!22] (an1) at (0,-4.00)
+  {Add \& Layer Norm\\[2pt]
+   {\scriptsize Residual: Input + Attention output}};
+
+% ── FEED-FORWARD NETWORK ─────────────────────────────────────────────────
+\node[mainbox, fill=blue!8] (ffn) at (0,-6.00)
+  {Feed-Forward Network\\[2pt]
+   {\scriptsize $768 \to 3072 \to 768$, GeLU}};
+
+% ── ADD & LAYER NORM 2 ───────────────────────────────────────────────────
+\node[mainbox, fill=yellow!22] (an2) at (0,-8.00)
+  {Add \& Layer Norm\\[2pt]
+   {\scriptsize Residual: Norm$_1$ + FFN output}};
+
+% ── BLOCK OUTPUT ─────────────────────────────────────────────────────────
+\node[mainbox, fill=blue!5] (bout) at (0,-10.00)
+  {Block Output ($\mathbb{R}^{768}$)\\[2pt]
+   {\scriptsize $\longrightarrow$ input of next block}};
+
+% ── [CLS] TOKEN POOLING ──────────────────────────────────────────────────
+\node[mainbox, fill=green!18] (cls) at (0,-12.00)
+  {\texttt{[CLS]} Token Vector ($\mathbb{R}^{768}$)\\[2pt]
+   {\scriptsize sentence-level representation}};
+
+% ── LINEAR CLASSIFICATION HEAD ───────────────────────────────────────────
+\node[mainbox, fill=orange!22] (fc) at (0,-14.00)
+  {Linear: $768 \to C$ \quad (Focal Loss)\\[2pt]
+   {\scriptsize classification logits}};
+
+% ── SOFTMAX OUTPUT ───────────────────────────────────────────────────────
+\node[mainbox, fill=red!14] (sm) at (0,-16.00)
+  {Softmax $\to$ predicted class\\[2pt]
+   {\scriptsize $C \in \{2,\,3,\,4\}$ ангилал}};
+
+% ── MAIN ARROWS ──────────────────────────────────────────────────────────
+\draw[arr] (inp)  -- (mha);
+\draw[arr] (mha)  -- (an1);
+\draw[arr] (an1)  -- (ffn);
+\draw[arr] (ffn)  -- (an2);
+\draw[arr] (an2)  -- (bout);
+\draw[arr] (bout) -- (cls);
+\draw[arr] (cls)  -- (fc);
+\draw[arr] (fc)   -- (sm);
+
+% ── RESIDUAL CONNECTIONS ─────────────────────────────────────────────────
+\draw[resarr] (inp.east) -- ++(0.70,0) -- ++(0,-4.00) -- (an1.east);
+\node[font=\scriptsize, text=gray!55, anchor=west] at (3.40,-2.00) {Residual 1};
+\draw[resarr] (an1.east) -- ++(1.00,0) -- ++(0,-4.00) -- (an2.east);
+\node[font=\scriptsize, text=gray!55, anchor=west] at (3.70,-6.00) {Residual 2};
+
+\end{tikzpicture}
+\caption{MN-BERT нарийн тохируулгатай загварын архитектур: Transformer блокын бүтэц ба ангиллын толгой.}
+\label{fig:bert-detail}
+\end{figure}
+
+MN-BERT-ийн дээр Tokenization, Transformer encoder stack, [CLS] pooling, Linear classification head, болон Softmax давхаргуудыг нэмж нарийн тохируулсан.
+
+
+%-------------------------------------------------------------------------------
+\section{Stage 1 ба Stage 2 тус тусын сургалтын дамжлага}
+
+Stage~1 болон Stage~2 хоёулаа PyTorch 2.x framework, HuggingFace Transformers
+4.x ашиглан сургагдсан. Сургалтын үйл явцыг нэгдмэл дамжлагад зохион байгуулсан
+бөгөөд түүнийг хүснэгт~\ref{tab:pipeline-flow}-д багцалсан.
+
+\begin{table}[H]
+\centering
+\caption{Сургалтын дамжлагын үе шатуудын урсгал}
+\label{tab:pipeline-flow}
+\fittable{%
+\begin{tabular}{@{}clp{8cm}@{}}
+\toprule
+\textbf{№} & \textbf{Үе шат} & \textbf{Тодорхойлолт} \\
+\midrule
+1 & Өгөгдөл ачаалалт       & CSV файлаас pandas ашиглан унших, train/val/test хуваалтаар ангилах \\
+2 & Tokenization           & \texttt{AutoTokenizer.from\_pretrained} дуудаж (\texttt{bert-base-mongolian-cased}) загвараар токенчлох, \texttt{max\_length}=256 \\
+3 & PyTorch Dataset        & \texttt{input\_ids}, \texttt{attention\_mask}, \texttt{labels} tensor-уудыг боловсруулах \\
+4 & DataLoader             & Batch болгон ачаалах, \texttt{shuffle=True} сургалтын багцад, \texttt{shuffle=False} валидаци/туршилтын багцад \\
+5 & Forward pass           & \texttt{outputs = model(input\_ids, attention\_mask, labels)}, Focal Loss ($\gamma{=}2.0$, ангиллын жинтэй) тооцох \\
+6 & Backward pass          & \texttt{loss.backward()} ба градиентын clipping (\texttt{max\_norm=1.0}) \\
+7 & Optimizer step         & AdamW optimizer, weight decay зохицуулалттай \\
+8 & LR scheduler           & Linear warmup (10\% алхамд), дараа нь шугаман буурах \\
+9 & Валидаци               & Epoch тутам валидацийн өгөгдлийн багцаар F1-macro үзүүлэлтийг үнэлэх, шилдэг (\texttt{best}) жинг хадгалах \\
+10 & Чекпойнт              & \texttt{best\_model.pt} файлд жинг хадгалах (early stopping-тай) \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+Stage~1-д 3 ангиллын cross-entropy loss (Эерэг / Саармаг / Сөрөг) ашигласан.
+Stage~2-т зөвхөн сөрөг дэд өгөгдлийн багц дээр binary cross-entropy loss
+(Хортой сөрөг / Бүтээлч шүүмжлэл) тооцсон. Тус тусын шилдэг жинг хадгалж, таамаглал (inference) хийх үед дараалуулан ашиглана.
+
+%-------------------------------------------------------------------------------
+\section{Оновчтой шийдэл: Нэг шатлалт (Flat) загварт шилжсэн нь}
+
+Хоёр шатлалт туршилтаас алдааны каскад дамжуулалт --- Stage~1-ийн алдаа Stage~2-ын үр дүнг боломжгүй болгох --- илрүүлсэн тул \textbf{Нэг шатлалт (Flat) MN-BERT}-ийг эцсийн шийдэл болгон сонгосон: бүх ангиллыг нэгэн зэрэг сурч, Focal Loss + Cosine Warmup-ааар хамгийн өндөр гүйцэтгэл гаргасан.
+
+%-------------------------------------------------------------------------------
+\section{Гиперпараметрийн тохиргоо ба оновчлол}
+
+Эцсийн гиперпараметрийн сонголтыг валидацийн багц дээрх F1-macro үзүүлэлтээр оновчлов
+(Хүснэгт~\ref{tab:hyperparams-mnbert}).
+
+\begin{table}[H]
+\centering
+\caption{Гиперпараметрийн эцсийн тохиргоо. Эцсийн тайлагнасан систем нь
+  \textbf{Нэг шатлалт (Flat)} загвар; Stage~1/Stage~2 баганууд нь харьцуулалтад
+  ашигласан хоёр шатлалт хувилбарынх.}
+\label{tab:hyperparams-mnbert}
+\fittable{%
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Гиперпараметр} & \textbf{Нэг шатлалт (эцсийн)} & \textbf{Stage 1} & \textbf{Stage 2} \\
+\midrule
+Learning rate              & $3\times10^{-5}$ & $3\times10^{-5}$ & $2\times10^{-5}$ \\
+Batch size                 & 16   & 16   & 16   \\
+Epochs (Best)              & 8    & 6    & 5    \\
+Warmup ratio               & 0.10 & 0.1  & 0.1  \\
+Weight decay               & 0.01 & 0.01 & 0.01 \\
+Dropout                    & 0.15 & 0.1  & 0.1  \\
+Max sequence length        & 256  & 128  & 128  \\
+Loss function              & Focal Loss ($\gamma{=}2.0$) & Жинтэй CE & Жинтэй CE \\
+Тэнцвэржүүлэлт             & $\alpha$ жин + WeightedRandomSampler & Жин & Жин \\
+Optimizer                  & AdamW & AdamW & AdamW \\
+LR scheduler               & Cosine + Warmup & Cosine + Warmup & Cosine + Warmup \\
+Early stopping patience    & 3 & 3 & 3 \\
+Random seed                & 42 & 42 & 42 \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+Суралцах хурдыг (LR) grid search аргаар хайхад $3\times10^{-5}$, багцын хэмжээ (batch size) 16 байх нь валидацийн багц дээр хамгийн сайн F1 утгыг үзүүлсэн.
+
+%-------------------------------------------------------------------------------
+\section{Сургалтын дэд бүтэц ба орчин}
+
+Загваруудыг сургах болон турших ажлыг локал тооцооллын орчинд гүйцэтгэсэн.
+Техник хангамжийн хувьд \textbf{AMD Radeon RX 9070 GRE 12GB} график картыг
+ашигласан бөгөөд \texttt{torch-directml} санг ашиглан DirectX-ээр дамжуулан
+GPU тооцооллыг идэвхжүүлсэн.
+
+%-------------------------------------------------------------------------------
+\section{Ангиллын тэнцвэржүүлэлт}
+
+Бүлэг~\ref{Chapter4}-д үзүүлсэн тэнцвэргүй байдал (Эерэг 6.55\% хамгийн цөөн)
+нь цөөнх ангиллын F1-ийг доройтуулж болзошгүй тул загвар тус бүрд тохирсон
+тэнцвэржүүлэлт хийв.
+
+\textbf{Суурь загваруудад} SMOTE ($k\!=\!5$) ашиглан цөөнх ангиллын өгөгдлийг синтетикээр нэмэгдүүлэв.
+
+\textbf{Нэг шатлалт MN-BERT-д} Focal Loss ($\gamma{=}2.0$)-ийг урвуу давтамжийн жин $\alpha_c = N/(K\cdot n_c)$ (Эерэг $3.707$, Саармаг $0.835$, Бүтээлч $0.570$, Хортой $1.286$)-тай болон \texttt{WeightedRandomSampler}-тэй хослуулав. Нөлөөг бүлэг~\ref{Chapter6}-ийн F1-macro болон Хүснэгт~\ref{tab:dq-progression}-аар үнэлэв.
+
+%-------------------------------------------------------------------------------
+\section{Gradio интерфейс ба дамжлагын нэгтгэл}
+
+
+Эцсийн системийн интерфейсийг Gradio сан ашиглан гурван хэсэг (tab) бүхий бүтэцтэйгээр хөгжүүлсэн:
+\textit{Ангилах} (Flat $\mathbf{83.26\%}$ / Two-stage $78.61\%$ сонголттой,
+итгэлцүүрийн (confidence) баартай), \textit{Харьцуулах} (хоёр архитектурыг зэрэг ажиллуулж
+каскад алдааны нөлөөг харах), \textit{Үнэлгээний} (confusion matrix, метрик).
+Загваруудыг хэрэгцээтэй үед нь ачаалах (lazy loading) горимоор AMD DirectML дээр инференс (inference) хийнэ.
+
+\section{Reproducibility ба туршилтын бүртгэл}
+
+Туршилтын үр дүнг давтах боломжийг хангах үүднээс: санамсаргүй тооны үүсгүүрийн эх утгыг (random seed $42$) тогтворжуулж, Git/GitHub ашиглан хувилбарын хяналт хийж, \texttt{requirements.txt} файл, сургалтын явцын лог (loss/F1 JSON), ангиллын матриц (confusion matrix) болон хамгийн сайн F1 утга бүхий чекпойнтуудыг хадгалсан. Энэ нь Ш-6 шаардлагыг бүрэн хангана.
+%-------------------------------------------------------------------------------
+\section{Бүлгийн дүгнэлт}
+
+Энэ бүлэгт MN-BERT-ийн архитектур, сургалтын дамжлага, гиперпараметр, тэнцвэржүүлэлтийн арга (SMOTE, Focal Loss+жин+Sampler), Gradio интерфейс болон туршилтыг дахин гүйцэтгэх боломжит нөхцөлийг баримтжуулсан. Дараагийн бүлэгт туршилтын үр дүнг авч үзнэ.

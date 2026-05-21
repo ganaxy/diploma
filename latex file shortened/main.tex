@@ -1,0 +1,235 @@
+﻿%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Их сургуулийн оюутны тезис  
+% LaTeX Загвар
+% Version 2.3 (25/3/16)
+%
+% Энэ загвар нь дараах сайтаас авсан загварын монгол хувилбар юм.
+% http://www.LaTeXTemplates.com
+%
+% Version 2.x major modifications by:
+% Vel (vel@latextemplates.com)
+%
+% Анхдагч загварын эх үүсвэр:
+% Steve Gunn (http://users.ecs.soton.ac.uk/srg/softwaretools/document/templates/)
+% Sunil Patel (http://www.sunilpatel.co.uk/thesis-template/)
+%
+% Загварын лиценз:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%-------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%-------------------------------------------------------------------------------
+
+\documentclass[
+12pt, % Баримтын фонтын хэмжээ, сонголт: 10pt, 11pt, 12pt
+oneside, % Хоёр талаар хэвлэж үдэхээр тохируулсан. Нэг тал бол комментыг арилга
+%chapterinoneline,% Нэг мөрөнд бүлгийн дугаар, нэрийг гаргах
+english, % babel багцын хэлний тохиргоо
+onehalfspacing, % Мөр хоорондын зай. Сонголтууд: singlespacing, onehalfspacing, doublespacing
+%draft, % Ноорог горимд шилжихийн тулд комментыг арилга(зураг, холбоос, hboxes гарахгүй)
+nolistspacing, % Хэрэв мөр хоорондын зай onehalfspacing эсвэл doublespacing бол, жагсаалтын мөр хоорондын зайг single болгохын тулд комментыг арилга
+%liststotoc, % Зураг/хүснэгт/бусад жагсаалтыг гарчигт оруулахын тулд комментыг арилга
+%toctotoc, % Uncomment to add the main table of contents to the table of contents
+%parskip, % Параграф хооронд зай оруулахын тулд комментыг арилга
+%nohyperref, % hyperref багцыг ачаалахгүй бол комментыг арилга
+headsepline, % Толгой мөрийн доогуур шугам татахын тулд комментыг арилга
+]{MUST-Thesis} % Энэ класс файл нь баримтын бүтцийг тодорхойлно
+
+\usepackage[utf8]{inputenc} % Олон улсын тэмдэгт оруулахад хэрэгтэй
+\usepackage[T2A]{fontenc} % Олон улсын тэмдэгтийн гаралтын кодчилол
+\usepackage[mongolian]{babel}
+\usepackage{titlesec}
+\usepackage[table]{xcolor}
+\usepackage{rotating} % эргүүлэх
+\usepackage{enumitem}
+\setlist{noitemsep}
+\setlist[enumerate]{topsep=4pt, itemsep=2pt}
+
+
+\let\oldtabular\tabular
+\let\endoldtabular\endtabular
+\renewenvironment{tabular}
+   {\bgroup\singlespacing\oldtabular}%
+   {\endoldtabular\egroup}
+\let\oldverse\verse
+\let\endoldverse\endverse
+\renewenvironment{verse}
+   {\bgroup\singlespacing\oldverse}%
+   {\endoldverse\egroup}
+
+\usepackage{caption,longtable,ltcaption}
+\usepackage{framed}
+\usepackage{graphicx}
+\DeclareCaptionJustification{nohyphen}{\hyphenpenalty=10000}
+\captionsetup{justification=nohyphen}
+
+
+\usepackage{float}
+\usepackage{pgf}
+\usepackage{tikz} % зураг зурах
+\usetikzlibrary{shapes,arrows,arrows.meta,automata,positioning,shadows,shapes.geometric}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+\definecolor{OliveGreen}{cmyk}{0.64,0,0.95,0.40}
+\definecolor{CadetBlue}{cmyk}{0.62,0.57,0.23,0}
+\definecolor{Cover}{RGB}{102,255,255}
+\definecolor{Chapter}{RGB}{255,220,180}
+
+\definecolor{lightlightgray}{gray}{0.9}
+\usepackage{listings}
+\renewcommand{\lstlistingname}{Эх код} % Програмын эх код хэвлэх
+\lstset{
+language=C,                             % Code langugage
+basicstyle=\linespread{1.0}\ttfamily,                   % Code font
+keywordstyle=\color{OliveGreen},        % Keywords font ('*' = uppercase)
+commentstyle=\color{CadetBlue},         % Comments font
+numbers=left,                           % Line nums position
+numberstyle=\tiny,                      % Line-numbers fonts
+stepnumber=1,                           % Step between two line-numbers
+numbersep=5pt,                          % How far are line-numbers from code
+backgroundcolor=\color{lightlightgray}, % Choose background color
+frame=none,                             % A frame around the code
+tabsize=2,                              % Default tab size
+captionpos=t,                           % Caption-position = bottom
+breaklines=true,                        % Automatic line breaking?
+breakatwhitespace=false,                % Automatic breaks only at whitespace?
+showspaces=false,                       % Dont make spaces visible
+showtabs=false,                         % Dont make tabls visible
+columns=flexible,                       % Column format
+morekeywords={__global__, __device__},  % CUDA specific keywords
+}
+
+\usepackage[autostyle=false]{csquotes} % Ном зүйд хэлнээс хамаарсан хашилт оруулахад хэрэгтэй
+
+\usepackage[backend=bibtex,natbib=true,sorting=none,sortcites]{biblatex} % Ном зүйд bibtex -г ашиглах
+
+\addbibresource{references.bib} % Ном зүйн файл
+
+\newcommand{\authorshipname}{Зохиогч эрхийн хамгаалал}
+\newcommand{\abbrevname}{Товчилсон үгс}
+\newcommand{\constantsname}{Физик тогтмолууд}
+\newcommand{\symbolsname}{Таних тэмдэгтүүд}
+\newcommand{\acknowledgementname}{Талархал}
+\newcommand{\abstractname}{Хураангуй}
+ 
+%-------------------------------------------------------------------------------
+%	THESIS INFORMATION
+%-------------------------------------------------------------------------------
+
+% ★ THESIS INFORMATION — UPDATE ALL FIELDS BEFORE SUBMISSION ★
+\thesistitle{Монгол хэлний цахим орчин дахь хандлагыг тодорхойлох, шүүх хиймэл оюунд суурилсан NLP систем}
+    \thesistype{БАКАЛАВРЫН ДИПЛОМЫН АЖИЛ}
+\supervisor{Н.Анхбаяр} % Удирдагч
+ \reader{...........................................}
+\advisor{Э.Батцэцэг} % Зөвлөх
+\degreeind{061902000000002306}
+\degree{Хиймэл оюун ухаан}
+\authorshort{Г.Ган-од} % Товч нэр
+\authorlong{Ганболд Ган-од} % Бүтэн нэр
+\addresses{b221960006@must.edu.mn}
+\subject{Хиймэл оюун ухаан}
+\keywords{NLP, хортой агуулга, бүтээлч шүүмжлэл, MN-BERT, мэдрэмжийн шинжилгээ, Монгол хэл, хоёр шатлалт ангилал}
+\university{\href{http://www.must.edu.mn}{Шинжлэх Ухаан Технологийн Их Сургууль}}
+\department{Компьютерын ухааны тэнхим}
+\deptchair{...........................................}
+\group{NLP судалгааны баг}
+\faculty{\href{http://www.sict.edu.mn}{Мэдээлэл, Холбооны Технологийн Сургууль}}
+
+\hypersetup{pdftitle=\ttitle} % Pdf файлын гарчиг
+\hypersetup{pdfauthor=\shortname} % Pdf файлын зохиогчийн нэр
+\hypersetup{pdfkeywords=\keywordnames} % Pdf файлын түлхүүр үгс
+\hypersetup{allcolors=black} % Pdf файлын бүх холбоос хар өнгөтэй
+
+\usepackage{longtable}
+\usepackage{booktabs} % \toprule \midrule \bottomrule хүснэгтэд
+\usepackage{amssymb} % \checkmark, \geq, \leq, математик тэмдэгтүүд
+\usepackage{amsmath}
+
+% Хэт өргөн хүснэгтийг текстийн өргөнд багтаах (зөвхөн шаардлагатай үед жижигрүүлнэ)
+% Хэт өргөн хүснэгтийг текстийн өргөнд багтаах: фонт + баганы зайг багасгана
+\newcommand{\fittable}[1]{%
+  {\footnotesize\setlength{\tabcolsep}{3.5pt}\renewcommand{\arraystretch}{1.05}#1}}
+
+% --- Мөр таслалтыг сайжруулж, текст баруун хязгаараас халих асуудлыг засах ---
+% Монгол хэлэнд babel таслалтын дүрэмгүй тул урт үг/нэр томьёо мөрнөөс халдаг.
+\usepackage[protrusion=true,expansion=false,babel=true]{microtype}
+\usepackage{xurl} % урт URL-ийг ном зүйд мөрөнд тасалж зөөх
+\tolerance=2500
+\setlength{\emergencystretch}{4em} % сүүлчийн арга болгон мөрийг сулруулах
+\hbadness=10000 % overfull-аас зайлсхийснээс үүсэх underfull сэрэмжлүүлгийг намжаах
+\hyphenpenalty=4000 % Латин/техник үгсийг шаардлагатай үед бага зэрэг таслахыг зөвшөөрөх
+
+\begin{document}
+
+\frontmatter % Агуулгын өмнөх хуудас дугаарлалт: i, ii, iii, iv... г.м.
+
+\pagestyle{plain} % Тезисийн загварыг дуудах хүртэлх толгой мөрийн суурь загвар
+
+\include{FrontBackMatter/Titlepage} % Нүүр хуудас
+\include{FrontBackMatter/Plan-Review} % Төлөвлөгөө, гүйцэтгэл, шүүмжийн хуудас
+\include{FrontBackMatter/Declaration} % Мэдэгдлийн хуудас
+\include{FrontBackMatter/IPDeclaration} % Оюуны өмчийн мэдэгдэл
+% \include{FrontBackMatter/Quotation} % Ишлэл хуудас — хасав (өмнөх онуудын дипломд байхгүй, хуудас хэмнэв)
+\include{FrontBackMatter/Abstract} % Ажлын хураангуй
+\include{FrontBackMatter/Acknowledgments} % Талархлын хуудас
+\include{FrontBackMatter/Abbreviations} % Товчилсон үгс
+% \include{FrontBackMatter/Constants} % Ашигласан тогтмолууд
+% \include{FrontBackMatter/Symbols} % Ашгласан таних тэмдгүүд
+% \include{FrontBackMatter/Dedication} % Ажлыг хэнд зориулсан
+
+%-------------------------------------------------------------------------------
+%	LIST OF CONTENTS/FIGURES/TABLES PAGES
+%-------------------------------------------------------------------------------
+
+\tableofcontents % Гарчиг хэвлэх
+% \listoffigures % Хасав: хуудас хэмнэхийн тулд зургийн жагсаалтыг хасав
+% \listoftables  % Хасав: хуудас хэмнэхийн тулд хүснэгтийн жагсаалтыг хасав
+
+%-------------------------------------------------------------------------------
+%	THESIS CONTENT - CHAPTERS
+%-------------------------------------------------------------------------------
+% Давхардсан удиртгалыг хасав — Chapter1.tex нь бүрэн агуулгатай (Fix 8)
+% \include{Chapters/introduction}
+\mainmatter % Хуудасны тоон (1,2,3...) дугаарлалт эхлэнэ
+
+\pagestyle{thesis} % Хуудасны тогойг "thesis" загвар руу буцаах
+\myformat % Бүлгийн нэрийг тусгай шар хуудсанд хэвлэх (эх файлтай нийцүүлэв)
+
+% Тезисийн бүлгүүдийг Chapters хавтаснаас бие даасан файл байдлаар оруулах
+% researchoverview хасагдсан — Хураангуйтай давхцаж байсан (audit D2)
+\include{Chapters/Chapter1}   % БҮЛЭГ 1: Асуудлын томьёолол (Удиртгал)
+\include{Chapters/Chapter2}   % БҮЛЭГ 2: Холбогдох судалгаа ба онолын үндэс
+\include{Chapters/Chapter3}   % БҮЛЭГ 3: Аргазүй ба архитектур
+\include{Chapters/Chapter4}   % БҮЛЭГ 4: Өгөгдлийн боловсруулалт
+\include{Chapters/Chapter5}   % БҮЛЭГ 5: Загвар хөгжүүлэлт ба дамжлага
+\include{Chapters/Chapter6}   % БҮЛЭГ 6: Үр дүн ба хэлэлцүүлэг
+\include{Chapters/Chapter7}   % БҮЛЭГ 7: Ёс зүйн асуудал
+\include{Chapters/Chapter8}   % БҮЛЭГ 8: Дүгнэлт
+\pagestyle{plain}
+
+%-------------------------------------------------------------------------------
+%	THESIS CONTENT - APPENDICES
+%-------------------------------------------------------------------------------
+
+\appendix % Дараах "chapters" нь Хавсралт болохыг LaTex -д хэлэх
+
+% Тезисийн бүлгүүдийг Appendices хавтаснаас бие даасан файл байдлаар оруулах
+
+% \include{Appendices/AppendixA}
+%\include{Appendices/AppendixB}
+%\include{Appendices/AppendixC}
+
+%-------------------------------------------------------------------------------
+%	BIBLIOGRAPHY
+%-------------------------------------------------------------------------------
+ \defformat % Бүлгийн нэрийг оргиналь байдлаар хэвлэх
+
+\addchaptertocentry{Ном зүй} % Ном зүйг гарчигт нэмэх.
+ \printbibliography[heading=bibliography,title={Ном зүй}]
+
+%-------------------------------------------------------------------------------
+\end{document}
+ 

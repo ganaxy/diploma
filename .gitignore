@@ -119,3 +119,32 @@ generate_figures.py
 current idea.txt
 current progression of diploma.txt
 sample scores/
+
+# ── Claude session working notes ──────────────────────────────────────────
+SESSION_*.md
+SESSION_HANDOFF_*.md
+
+# ── Gradio cache ──────────────────────────────────────────────────────────
+.gradio/
+
+# ── Claude Code internal directories ──────────────────────────────────────
+.claude/
+**/.claude/
+
+# ── LaTeX latexmk build files ─────────────────────────────────────────────
+*.fdb_latexmk
+*.fls
+
+# ── LaTeX build artifacts ─────────────────────────────────────────────────
+*.aux
+*.bbl
+*.blg
+*.toc
+*.lof
+*.lot
+*.out
+*.synctex.gz
+*.run.xml
+*.log
+bib.log
+bibtex.log

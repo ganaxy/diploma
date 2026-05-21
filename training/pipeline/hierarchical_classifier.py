@@ -343,12 +343,14 @@ def hierarchical_predict(texts, s1_model, s2_model, tokenizer, max_length, devic
         s1_logits = s1_model(**enc).logits
     s1_preds = torch.argmax(s1_logits, dim=-1).cpu().numpy()
 
-    final_labels = []
+    final_labels = [None] * len(s1_preds)
+    neg_indices = []
 
     for i, pred_id in enumerate(s1_preds):
         s1_label = stage1_id2label[pred_id]
         if s1_label in ("POSITIVE", "NEUTRAL"):
-            final_labels.append(s1_label)
+            final_labels[i] = s1_label
+        else:  # NEGATIVE → route to Stage 2 (TOXIC vs CONSTRUCTIVE)
             neg_indices.append(i)
 
     if neg_indices:

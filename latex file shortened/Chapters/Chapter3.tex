@@ -1,0 +1,423 @@
+﻿% БҮЛЭГ 3 — СИСТЕМИЙН АРХИТЕКТУР БА ЗАГВАРЫН ЗОХИОН БАЙГУУЛАЛТ
+
+\chapter{Системийн архитектур ба загварын зохион байгуулалт}
+\label{Chapter3}
+
+Энэ бүлэгт туршилтын архитектур, сургалтын дамжлага, интерфейсийн бүтэц,
+үнэлгээний арга зүйг тайлбарлана.
+
+\textbf{Чухал тэмдэглэл.} Энэ бүлэгт хоёр шатлалт каскад архитектурыг
+танилцуулах боловч каскад алдааны дамжуулалтын улмаас $78.61\%$ гүйцэтгэл
+гаргасан тул \textbf{эцсийн шийдэл болгон нэг шатлалт Flat MN-BERT-ийг сонгосон}
+(харьцуулалтыг бүлэг~\ref{Chapter5}–\ref{Chapter6}-д үзнэ үү).
+
+%-------------------------------------------------------------------------------
+\section{Системийн туршилтын архитектур}
+
+Системийн зохион байгуулалтыг илүү тодорхой болгохын тулд эхлээд системийн
+хэрэглээний тохиолдлын (Use Case) болон үйл ажиллагааны (Activity) логикийг
+тодорхойлов.
+
+\subsection{Хэрэглээний тохиолдлын диаграмм (Use Case Diagram)}
+
+Зураг \ref{fig:use-case}-т харуулсанчлан систем нь гурван үндсэн оролцогчтой:
+Өсвөр насны хэрэглэгч, Модератор (зохицуулагч) болон Системийн администратор.
+Хэрэглэгч сэтгэгдэл оруулах бол, Модератор нь системийн ангилсан үр дүнг хянаж,
+хортой агуулгыг шүүх, бүтээлч шүүмжлэлийг зөвшөөрөх үйлдлийг гүйцэтгэнэ.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  usecase/.style={ellipse, draw, minimum width=5.0cm, minimum height=1.0cm,
+                  fill=blue!8, draw=blue!50, line width=0.8pt,
+                  align=center, font=\small},
+  actor/.style={circle, draw, minimum size=0.7cm,
+                fill=orange!14, draw=orange!65, line width=0.8pt},
+  arr/.style={draw, ->, >=Stealth, thick, line width=0.7pt},
+]
+
+  % ── SYSTEM BOUNDARY ──────────────────────────────────────────────────────
+  \draw[rounded corners=6pt, draw=gray!55, fill=gray!4, line width=1pt]
+    (-3.2, -4.6) rectangle (3.2, 3.6);
+  \node[font=\small\bfseries, text=gray!65] at (0, 3.25)
+    {NLP Ангиллын Систем};
+
+  % ── USE CASES ────────────────────────────────────────────────────────────
+  \node[usecase] (uc1) at (0,  2.2) {Сэтгэгдэл оруулах};
+  \node[usecase] (uc2) at (0,  0.8) {Ангиллын дүн үзэх};
+  \node[usecase] (uc3) at (0, -0.7) {Хортой агуулга шүүх};
+  \node[usecase] (uc4) at (0, -2.2) {Бүтээлч шүүмжлэл зөвшөөрөх};
+  \node[usecase] (uc5) at (0, -3.8) {Загвар сургах / шинэчлэх};
+
+  % ── LEFT ACTORS ──────────────────────────────────────────────────────────
+  \node[actor] (user)  at (-6.0,  2.2) {};
+  \node[font=\small, align=center] at (-6.0, 1.35)
+    {Өсвөр насны\\Хэрэглэгч};
+
+  \node[actor] (admin) at (-6.0, -3.8) {};
+  \node[font=\small, align=center] at (-6.0, -4.65)
+    {Системийн\\Администратор};
+
+  % ── RIGHT ACTOR ──────────────────────────────────────────────────────────
+  \node[actor] (mod)   at ( 6.0, -0.7) {};
+  \node[font=\small, align=center] at ( 6.0, -1.55)
+    {Модератор};
+
+  % ── CONNECTIONS ──────────────────────────────────────────────────────────
+  \draw[arr] (user)  -- (uc1.west);
+  \draw[arr] (admin) -- (uc5.west);
+  \draw[arr] (mod)   -- (uc2.east);
+  \draw[arr] (mod)   -- (uc3.east);
+  \draw[arr] (mod)   -- (uc4.east);
+
+\end{tikzpicture}
+\caption{Системийн хэрэглээний тохиолдлын диаграмм: Хэрэглэгч сэтгэгдэл оруулж,
+  Модератор ангиллын үр дүнг хянан шүүж, Администратор загварыг удирдана.}
+\label{fig:use-case}
+\end{figure}
+
+
+\subsection{Үйл ажиллагааны диаграмм (Activity Diagram)}
+\label{sec:activity-diagram}
+
+Системийн логик урсгалыг Зураг \ref{fig:activity-diagram}-т харуулав. Энэхүү
+диаграмм нь хоёр шатлалт ангиллын шийдвэр гаргах үйл явцыг нарийвчлан харуулж
+байна.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{\linewidth}{!}{%
+    \begin{tikzpicture}[
+        node distance=1cm and 1.5cm,
+        start/.style={circle, draw, fill=black, inner sep=3pt},
+        stop/.style={circle, draw, double, fill=black!50, inner sep=2.5pt},
+        procstep/.style={rectangle, draw, rounded corners, minimum width=4cm, minimum height=1cm, text centered, fill=green!5, drop shadow, align=center},
+        decision/.style={diamond, draw, aspect=2, minimum width=3cm, text centered, fill=yellow!10, font=\small, drop shadow, inner sep=0pt, align=center},
+        arrow/.style={thick, ->, >=stealth}
+    ]
+        \node (init) [start] {};
+        \node (input) [procstep, below=of init] {Текст хүлээн авах};
+        \node (prep) [procstep, below=of input] {Урьдчилсан боловсруулалт};
+        \node (s1) [decision, below=1.5cm of prep] {Сөрөг? (Stage 1)};
+        
+        \node (allow) [procstep, left=2.5cm of s1] {Зөвшөөрөх (Allow)};
+        
+        \node (s2) [decision, below=1.5cm of s1] {Хортой? (Stage 2)};
+        \node (block) [procstep, right=2.5cm of s2] {Блок хийх (Block)};
+        
+        \node (end) [stop, below=of s2] {};
+
+        \draw [arrow] (init) -- (input);
+        \draw [arrow] (input) -- (prep);
+        \draw [arrow] (prep) -- (s1);
+        \draw [arrow] (s1) -- node[anchor=east, xshift=-0.1cm] {Тийм} (s2);
+        \draw [arrow] (s1) -- node[anchor=south] {Үгүй} (allow);
+        \draw [arrow] (s2.west) -| node[anchor=south, xshift=1.5cm] {Үгүй} (allow);
+        \draw [arrow] (s2) -- node[anchor=south] {Тийм} (block);
+        
+        \draw [arrow] (allow) |- (end);
+        \draw [arrow] (block) |- (end);
+    \end{tikzpicture}}
+    \caption{Системийн шүүлтүүрийн логикийн үйл ажиллагааны диаграмм}
+    \label{fig:activity-diagram}
+\end{figure}
+
+\subsection{Давхаргын архитектур}
+
+Системийн архитектур нь өгөгдлийн боловсруулалт, загварын давхарга, хэрэглэгчийн интерфейс гэсэн гурван давхаргаас бүрдэнэ.
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+      block/.style={rectangle, draw, fill=blue!10, text width=10em,
+                    text centered, rounded corners, minimum height=3em, align=center},
+      line/.style={draw, -latex}
+    ]
+    \node [block] (input) {Хам текст \\ (найман эх сурвалж)};
+    \node [block, below of=input, node distance=3cm] (preprocess)
+          {Урьдчилсан боловсруулалт \\ (Цэвэрлэгээ, Токенчлол)};
+    \node [block, below of=preprocess, node distance=3cm] (stage1)
+          {Stage~1: Сентимент ангилал \\ (Эерэг / Саармаг / Сөрөг)};
+    \node [block, below of=stage1, node distance=3cm] (stage2)
+          {Stage~2: Нарийвчилсан ангилал \\ (Хортой сөрөг vs Бүтээлч шүүмжлэл)};
+    \node [block, below of=stage2, node distance=3cm] (output)
+          {Үр дүн \\ (Gradio интерфейс)};
+    \path [line] (input) -- (preprocess);
+    \path [line] (preprocess) -- (stage1);
+    \path [line] (stage1) -- node [right, xshift=0.3cm]
+          {\small Сөрөг} (stage2);
+    \path [line] (stage2) -- (output);
+  \end{tikzpicture}
+  \caption{Системийн ерөнхий архитектурын схем}
+  \label{fig:system-arch}
+\end{figure}
+
+Зураг~\ref{fig:pipeline}-д дамжлагыг харуулав.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  node distance=0.5cm,
+  box/.style={draw, rounded corners, minimum width=4.8cm, minimum height=0.75cm,
+              text centered, font=\small, fill=blue!8},
+  wide/.style={draw, rounded corners, minimum width=4.8cm, minimum height=0.75cm,
+               text centered, font=\small, fill=green!12},
+  arrow/.style={->, >=Stealth, thick}
+]
+\node[box]  (raw)   at (0,0)    {Хам текст (news.mn / Facebook / gogo.mn)};
+\node[box]  (filt)  at (0,-1.3) {Кирилл шүүлт ($\geq$85\% кирилл)};
+\node[box]  (clean) at (0,-2.6) {Цэвэрлэгээ (URL, HTML, emoji → орлуулагч)};
+\node[box]  (tok)   at (0,-3.9) {SentencePiece токенчлол (MN-BERT)};
+\node[box]  (enc)   at (0,-5.2) {\texttt{[CLS]}+токен дараалал → 12-давхарга энкодер};
+\node[wide] (cls)   at (0,-6.5) {\texttt{[CLS]} вектор ($\mathbb{R}^{768}$) → Шугаман + Softmax};
+\node[wide] (out)   at (0,-7.8) {Ангиллын шошго (Эерэг / Саармаг / Хортой сөрөг / Бүтээлч шүүмжлэл)};
+\draw[arrow] (raw)   -- (filt);
+\draw[arrow] (filt)  -- (clean);
+\draw[arrow] (clean) -- (tok);
+\draw[arrow] (tok)   -- (enc);
+\draw[arrow] (enc)   -- (cls);
+\draw[arrow] (cls)   -- (out);
+\end{tikzpicture}
+\caption{MN-BERT сургалтын дамжлага (pipeline) (хам текстээс ангиллын шошго хүртэл)}
+\label{fig:pipeline}
+\end{figure}
+
+Stage~1: Эерэг/Саармаг/Сөрөг ангилал; зөвхөн Сөрөг текст Stage~2-т
+Хортой сөрөг/Бүтээлч шүүмжлэл ялгалтанд орно (Зураг~\ref{fig:two-stage-arch}).
+
+%-------------------------------------------------------------------------------
+\section{Хоёр шатлалт ангиллын архитектур}
+
+Хоёр шатлалт архитектур: Эерэг/Саармаг/Сөрөг ялгалт (Stage~1) болон Хортой
+сөрөг/Бүтээлч шүүмжлэл нарийвчлал (Stage~2). Лексик шинжилгээ хангалтгүй тул
+контекст мэдрэмжтэй загвар шаардагдах бөгөөд хоёр шат бүрийг тусгай даалгавартаа төвлөрүүлнэ.
+
+\subsection{Stage~1 --- Сентимент ангилал}
+
+Stage~1 загварын зорилго нь оролтын текстийг Эерэг, Саармаг, Сөрөг гэсэн
+гурван ангилалд хуваах юм. Энэ шатанд дараах загваруудыг хэрэгжүүлж,
+харьцуулна:
+
+\begin{itemize}
+  \item \textbf{MN-BERT:} нарийн тохируулга (fine-tune) хийж \texttt{[CLS]} гаралтыг softmax руу дамжуулна.
+  \item \textbf{LR:} TF-IDF дээр L2 регуляризацитай.
+  \item \textbf{NB:} TF-IDF дээр Multinomial Naive Bayes.
+  \item \textbf{SVM:} TF-IDF дээр Шугаман цөм (Linear kernel).
+\end{itemize}
+
+Stage~1-ийн гол шаардлага: Сөрөг ангиллын сэргээлт (recall) өндөр байлгах (алдаагүй тохиолдолд Stage~2-т дамжуулна).
+
+\subsection{Stage~2 --- Хортой сөрөг vs Бүтээлч шүүмжлэл ялгалт}
+
+Stage~1-ээс Сөрөг гэж ангилагдсан текстүүд Stage~2 руу дамжина. Энэ шатанд
+хоёр ангилалт (binary classification) хийнэ:
+
+\begin{itemize}
+  \item \textbf{Хортой сөрөг:} Доромжлол, хувь хүнд чиглэсэн довтолгоо --- устгах шаардлагатай.
+  \item \textbf{Бүтээлч шүүмжлэл:} Аргументтай, нотолгоонд суурилсан сөрөг үнэлгээ --- хамгаалах шаардлагатай.
+\end{itemize}
+
+Stage~2-т MN-BERT болон суурь загваруудыг (LR, NB, SVM) харьцуулна.
+Ялгалтын шалгуур: (1)~\textbf{чиглэл} (хувь хүн vs. асуудал);
+(2)~\textbf{зорилго} (гомдоох vs. сайжруулах) --- MN-BERT-ийн анхаарлын механизм (self-attention) тэр ялгааг барина.
+
+\subsection{Хоёр шатлалт загварын давхаргын архитектур}
+
+Хоёр шатлалт загварын давхаргын бүтцийг Зураг~\ref{fig:two-stage-arch}-д харуулав.
+Stage~1 ба Stage~2 нь ижил MN-BERT encoder, харин өөр өөр classifier head-тай.
+
+\begin{figure}[H]
+\centering
+\scalebox{0.76}{%
+\begin{tikzpicture}[
+  layer/.style={draw, rounded corners=4pt, minimum width=7.5cm,
+                minimum height=1.40cm, text width=7.0cm,
+                align=center, font=\small, line width=0.7pt},
+  hlayer/.style={draw, rounded corners=4pt, minimum width=3.5cm,
+                 minimum height=1.40cm, text width=3.2cm,
+                 align=center, font=\small, line width=0.7pt},
+  arr/.style={->, >=Stealth, thick, line width=0.8pt},
+]
+
+% ── Shared MN-BERT backbone ───────────────────────────────────────────────
+\node[layer, fill=gray!12, draw=gray!50] (inp) at (0, 0)
+  {\textbf{Оролт токенчлол}\\[3pt]
+   {\scriptsize [CLS] $t_1 \ldots t_n$ [SEP] \enspace·\enspace max\_length\,=\,128}};
+
+\node[layer, fill=yellow!16, draw=yellow!65!black] (emb) at (0,-2.60)
+  {\textbf{Эмбэддинг давхарга (768-хэмжээст)}\\[3pt]
+   {\scriptsize Token Emb + Position Emb + Segment Emb}};
+
+\node[layer, fill=blue!12, draw=blue!50] (enc) at (0,-5.20)
+  {\textbf{БЕРТ Энкодер --- 12 Transformer блок}\\[3pt]
+   {\scriptsize Multi-Head Self-Attention (12 толгой) + LayerNorm + Feed-Forward}};
+
+\node[layer, fill=blue!22, draw=blue!60] (cls) at (0,-7.80)
+  {\textbf{[CLS] Pooled вектор --- 768-хэмжээст}};
+
+\node[layer, fill=orange!12, draw=orange!55] (drop) at (0,-10.40)
+  {\textbf{Dropout}\enspace(p\,=\,0.1)};
+
+% ── Stage 1 head (left) ───────────────────────────────────────────────────
+\node[hlayer, fill=orange!20, draw=orange!60] (lin1) at (-2.6,-13.60)
+  {\textbf{Шугаман}\\[3pt]{\scriptsize 768\,$\to$\,3}};
+
+\node[hlayer, fill=green!16, draw=green!55] (out1) at (-2.6,-16.20)
+  {\textbf{Softmax (Stage~1)}\\[3pt]
+   {\scriptsize Эерэг · Саармаг · Сөрөг}};
+
+% ── Stage 2 head (right) ──────────────────────────────────────────────────
+\node[hlayer, fill=teal!14, draw=teal!55] (lin2) at (2.6,-13.60)
+  {\textbf{Шугаман}\\[3pt]{\scriptsize 768\,$\to$\,2}};
+
+\node[hlayer, fill=red!14, draw=red!50] (out2) at (2.6,-16.20)
+  {\textbf{Softmax (Stage~2)}\\[3pt]
+   {\scriptsize Хортой сөрөг · Бүтээлч шүүмжлэл}};
+
+% ── Shared backbone arrows ────────────────────────────────────────────────
+\draw[arr] (inp)  -- (emb);
+\draw[arr] (emb)  -- (enc);
+\draw[arr] (enc)  -- (cls);
+\draw[arr] (cls)  -- (drop);
+
+% Fork to two heads (0.80cm gap before branching)
+\draw[arr] (drop.south) -- ++(0,-0.80) coordinate (fork)
+           -- node[above, font=\scriptsize, text=green!55!black] {\textit{Stage~1}}
+           (-2.6,-11.90) -- (lin1.north);
+\draw[arr] (fork)
+           -- node[above, font=\scriptsize, text=teal!55!black] {\textit{Stage~2}}
+           (2.6,-11.90) -- (lin2.north);
+
+\draw[arr] (lin1) -- (out1);
+\draw[arr] (lin2) -- (out2);
+
+\end{tikzpicture}%
+}
+\caption{Хоёр шатлалт MN-BERT загварын давхаргын архитектур. Хоёр загвар тус бүр
+  ижил 12-блокт БЕРТ энкодерыг (768-хэмжээст hidden state) ашигладаг боловч
+  тус тусдаа нарийн тохируулга (fine-tuning) хийгдсэн.
+  Stage~1 нь 3-ангиллын (Шугаман 768$\to$3),
+  Stage~2 нь 2-ангиллын (Шугаман 768$\to$2) ангиллын толгойтой (classifier head).}
+\label{fig:two-stage-arch}
+\end{figure}
+
+%-------------------------------------------------------------------------------
+\section{MN-BERT загварын нарийн тохируулга}
+
+MN-BERT нь Монгол кирилл корпус дээр урьдчилан сургагдсан (pre-train) БЕРТ загвар.
+Эцсийн гиперпараметрийг Хүснэгт~\ref{tab:hyperparams-mnbert} (бүлэг~\ref{Chapter5})-д үзнэ.
+
+\subsection{Нарийн тохируулга стратеги}
+
+Stage~1 нь 3-ангиллын cross-entropy, Stage~2 нь binary cross-entropy алдагдлын (loss) функцээр тус тусдаа нарийн тохируулга хийгдэнэ; хоёулаа ижил урьдчилан сургагдсан жинг эхлэлийн цэг болгоно. Early stopping: validation loss 2 epoch буурахгүй бол зогсооно. Class-weighted loss: цөөн ангилалд (minority class) урвуу давтамжийн жин тооцоолно.
+
+%-------------------------------------------------------------------------------
+
+\subsection{Загварын гиперпараметрүүд}
+\label{sec:hyperparams-detail}
+
+Гиперпараметр: LR $2\times10^{-5}$, багц (batch) 16, max\_length 128, AdamW (decay $0.01$), warmup 10\%. Эцсийн нэг шатлалт загварын тохиргоог Хүснэгт~\ref{tab:hyperparams-mnbert}-аас үзнэ үү.
+
+\section{Суурь загварууд}
+
+MN-BERT-ийн гүйцэтгэлийг дараах гурван суурь загвартай харьцуулна:
+
+\begin{table}[H]
+\centering
+\caption{Суурь загваруудын тохиргоо}
+\label{tab:baseline-config}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Загвар} & \textbf{Шинж чанар} & \textbf{Тохиргоо} \\
+\midrule
+Logistic Regression & TF-IDF (unigram + bigram) & L2 регуляризаци, $C=1.0$ \\
+Naive Bayes         & TF-IDF (unigram + bigram) & Multinomial NB \\
+SVM                 & TF-IDF (unigram + bigram) & Шугаман цөм, $C=1.0$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Эдгээр суурь загварууд нь MN-BERT-ийн нэмүү үнэ цэнийг тодорхойлох жишиг сорил (benchmark) болно.
+
+Тэнцвэргүй өгөгдлийн шийдлийг бүлэг~\ref{Chapter4} ба бүлэг~\ref{Chapter5}-д, Gradio хэрэглэгчийн интерфейсийн дэлгэрэнгүй бүтцийг бүлэг~\ref{Chapter5}-д тус тус авч үзнэ.
+
+%-------------------------------------------------------------------------------
+
+%-------------------------------------------------------------------------------
+\section{Тэнцвэргүй өгөгдлийн шийдэл}
+\label{sec:imbalance}
+
+Датасетийн ангиллын тэнцвэргүй байдлыг хоёр стратегиар шийдвэрлэв.
+Суурь загварт SMOTE-оор цөөн ангиллыг нийлэгжүүлж тэнцвэржүүлэв.
+Эцсийн нэг шатлалт MN-BERT загварт Focal Loss ($\gamma{=}2.0$),
+ангиллын жин $\alpha$, WeightedRandomSampler-ийн хослолыг ашиглав.
+Энэхүү хослол хортой/бүтээлч ялгалтын цөөн ангиллын сэргээлтийг
+мэдэгдэхүйц сайжруулснаар Focal Loss-ын онолын давуу тал батлагдав.
+
+
+%-------------------------------------------------------------------------------
+\section{Gradio хэрэглэгчийн интерфейс}
+\label{sec:gradio}
+
+Gradio фреймворк ашиглан хэрэглэгчийн интерфейс бүрдүүлэв. Хэрэглэгч
+текст оруулахад систем урьдчилсан боловсруулалт хийж, нарийн тохируулсан MN-BERT
+загварт дамжуулан Эерэг/Саармаг/Хортой сөрөг/Бүтээлч шүүмжлэл гэсэн
+4 ангиллын нэгийг итгэлцлийн оноотой хамт буцаана.
+
+Инференсийн урсгал: $\text{Текст} \to \text{Урьдчилсан боловсруулалт} \to
+\text{MN-BERT токенчлол} \to \text{Нэг шатлалт ангилал} \to \text{Хэрэглэгч}$.
+Нэг шатлалт загвар ($83.26\%$) ба Хоёр шатлалт ($78.61\%$) хоёулаа нэгдсэн
+интерфейст байдаг бөгөөд хэрэглэгч сонгох боломжтой.
+
+\section{Үнэлгээний арга зүй}
+
+Гүйцэтгэлийг Нарийвчлал (Accuracy), Оновчлол (Precision), Сэргээлт (Recall), $F_1$, Confusion Matrix-аар хэмжинэ.
+Тэнцвэргүй өгөгдлийн нөхцөлд \textbf{Макро дундаж $F_1$ (Macro-average $F_1$)}-ийг гол үзүүлэлт болгох бөгөөд
+статистик найдвартай байдлыг McNemar тест болон bootstrap CI-аар нотолно.
+
+\subsection{Харьцуулалтын арга зүй}
+
+Загвар бүрийг ижил туршилтын өгөгдөл (test set) дээр үнэлнэ: ижил train/val/test хуваалт, ижил
+урьдчилсан боловсруулалт (MN-BERT: tokenizer; суурь: TF-IDF); туршилтын өгөгдөл сургалтанд ашиглагдаагүй;
+Макро дундаж $F_1$-score гол үзүүлэлт.
+
+%-------------------------------------------------------------------------------
+
+\subsection{Ангиллын үзүүлэлтүүд}
+\label{sec:eval-metrics}
+
+Үнэлгээнд Нарийвчлал, Макро-Оновчлол (macro-Precision), Макро-Сэргээлт (macro-Recall), Макро-F$_1$
+(\textit{macro}: ангилал тус бүрийн жинлэгдсэн дундаж) болон
+Confusion Matrix ашиглав. Тэнцвэргүй өгөгдөлд Макро F$_1$ нь
+нарийвчлалаас (accuracy) илүү мэдрэмжтэй хэмжүүр тул эцсийн шалгуур болно.
+
+\section{Технологийн стек}
+
+Системийг хэрэгжүүлэхэд ашиглагдах гол технологиудыг хүснэгт~\ref{tab:tech-stack}-д нэгтгэв.
+
+\begin{table}[H]
+\centering
+\caption{Системийн технологийн стек}
+\label{tab:tech-stack}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Зориулалт} & \textbf{Технологи} \\
+\midrule
+Програмчлалын хэл       & Python 3.10+ \\
+Загварын framework       & PyTorch, Hugging Face Transformers \\
+Урьдчилсан загвар       & MN-BERT (Hugging Face Hub) \\
+Суурь загварууд          & scikit-learn \cite{pedregosa2011} \\
+Тэнцвэргүй өгөгдөл      & imbalanced-learn (SMOTE) \\
+Хэрэглэгчийн интерфейс  & Gradio \\
+Өгөгдлийн боловсруулалт  & pandas, NumPy \\
+Дүрслэл                  & matplotlib, seaborn \\
+Хувилбар хяналт          & Git, GitHub \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%-------------------------------------------------------------------------------
+\section{Бүлгийн дүгнэлт}
+
+Энэ бүлэгт архитектур, нарийн тохируулгын стратеги, суурь загварууд, тэнцвэржүүлэлт, Gradio интерфейс, үнэлгээний арга зүйг тодорхойлсон.
