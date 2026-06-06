@@ -120,6 +120,13 @@ generate_figures.py
 current idea.txt
 current progression of diploma.txt
 sample scores/
+_extract_pdf_accs.py
+contract_llm_architecture 1_picturethatprofessorsendmeforarchitecture.png
+guideline_text.txt
+picture_ref_professorsent.md
+data/scrapers/facebook/output/
+data/scrapers/web/output/
+training/pipeline/*_log.txt
 Latex_diplom 4/
 latex file shortened/
 presentation/presentation_final_10min_defense_prep.md

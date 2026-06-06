@@ -69,8 +69,6 @@ diploma/
 │   ├── preprocess.py
 │   └── requirements.txt
 │
-├── latex file shortened/     # Дипломын ажлын LaTeX эх файл
-├── presentation/             # Хамгаалалтын илтгэлийн слайд
 ├── requirements.txt
 └── .gitignore
 ```
