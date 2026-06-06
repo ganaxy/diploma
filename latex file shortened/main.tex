@@ -3,7 +3,7 @@
 % LaTeX Загвар
 % Version 2.3 (25/3/16)
 %
-% Энэ загвар нь дараах сайтаас авсан загварын монгол хувилбар юм.
+% Энэ загвар нь дараах сайтаас авсан загварын Монгол хувилбар юм.
 % http://www.LaTeXTemplates.com
 %
 % Version 2.x major modifications by:
@@ -37,6 +37,7 @@ nolistspacing, % Хэрэв мөр хоорондын зай onehalfspacing эс
 headsepline, % Толгой мөрийн доогуур шугам татахын тулд комментыг арилга
 ]{MUST-Thesis} % Энэ класс файл нь баримтын бүтцийг тодорхойлно
 
+\usepackage{cmap} % PDF-д кирилл тэмдэгтийн хайлт/хуулбар зөв ажиллахад хэрэгтэй
 \usepackage[utf8]{inputenc} % Олон улсын тэмдэгт оруулахад хэрэгтэй
 \usepackage[T2A]{fontenc} % Олон улсын тэмдэгтийн гаралтын кодчилол
 \usepackage[mongolian]{babel}
@@ -120,22 +121,22 @@ morekeywords={__global__, __device__},  % CUDA specific keywords
 %-------------------------------------------------------------------------------
 
 % ★ THESIS INFORMATION — UPDATE ALL FIELDS BEFORE SUBMISSION ★
-\thesistitle{Монгол хэлний цахим орчин дахь хандлагыг тодорхойлох, шүүх хиймэл оюунд суурилсан NLP систем}
+\thesistitle{Монгол хэлний цахим орчин дахь хандлагыг тодорхойлох NLP системийн хөгжүүлэлт}
     \thesistype{БАКАЛАВРЫН ДИПЛОМЫН АЖИЛ}
-\supervisor{Н.Анхбаяр} % Удирдагч
- \reader{...........................................}
-\advisor{Э.Батцэцэг} % Зөвлөх
+\supervisor{Доктор (Ph.D) Н.Анхбаяр} % Удирдагч
+ \reader{Магистр (M.Sc) Б.Цэрэнлхам}
+\advisor{Магистр (M.Sc) Э.Батцэцэг} % Зөвлөгч
 \degreeind{061902000000002306}
-\degree{Хиймэл оюун ухаан}
-\authorshort{Г.Ган-од} % Товч нэр
-\authorlong{Ганболд Ган-од} % Бүтэн нэр
-\addresses{b221960006@must.edu.mn}
-\subject{Хиймэл оюун ухаан}
-\keywords{NLP, хортой агуулга, бүтээлч шүүмжлэл, MN-BERT, мэдрэмжийн шинжилгээ, Монгол хэл, хоёр шатлалт ангилал}
+\degree{Хиймэл оюун}
+\authorshort{Г.Ган-Од} % Товч нэр
+\authorlong{Ганболд Ган-Од} % Бүтэн нэр
+\addresses{ganboldganod634@gmail.com}
+\subject{Хиймэл оюун}
+\keywords{Монгол хэлний текст шинжилгээ, хортой агуулгын автомат ангилал, бүтээлч шүүмжлэл, урьдчилан сургагдсан хэлний загвар}
 \university{\href{http://www.must.edu.mn}{Шинжлэх Ухаан Технологийн Их Сургууль}}
 \department{Компьютерын ухааны тэнхим}
-\deptchair{...........................................}
-\group{NLP судалгааны баг}
+\deptchair{Доктор (Ph.D), дэд профессор А.Хүдэр}
+\group{Эх хэлний боловсруулалтын судалгааны баг}
 \faculty{\href{http://www.sict.edu.mn}{Мэдээлэл, Холбооны Технологийн Сургууль}}
 
 \hypersetup{pdftitle=\ttitle} % Pdf файлын гарчиг
@@ -162,6 +163,11 @@ morekeywords={__global__, __device__},  % CUDA specific keywords
 \hbadness=10000 % overfull-аас зайлсхийснээс үүсэх underfull сэрэмжлүүлгийг намжаах
 \hyphenpenalty=4000 % Латин/техник үгсийг шаардлагатай үед бага зэрэг таслахыг зөвшөөрөх
 
+% Зөвхөн бүлэг (X) ба хэсэг (X.Y) дугаарлагдана — дэд хэсэг (X.Y.Z) дугааргүй
+\setcounter{secnumdepth}{1}
+% Гарчигт зөвхөн бүлэг ба хэсэг харагдана
+\setcounter{tocdepth}{1}
+
 \begin{document}
 
 \frontmatter % Агуулгын өмнөх хуудас дугаарлалт: i, ii, iii, iv... г.м.
@@ -172,7 +178,7 @@ morekeywords={__global__, __device__},  % CUDA specific keywords
 \include{FrontBackMatter/Plan-Review} % Төлөвлөгөө, гүйцэтгэл, шүүмжийн хуудас
 \include{FrontBackMatter/Declaration} % Мэдэгдлийн хуудас
 \include{FrontBackMatter/IPDeclaration} % Оюуны өмчийн мэдэгдэл
-% \include{FrontBackMatter/Quotation} % Ишлэл хуудас — хасав (өмнөх онуудын дипломд байхгүй, хуудас хэмнэв)
+\include{FrontBackMatter/Quotation} % Ишлэл хуудас
 \include{FrontBackMatter/Abstract} % Ажлын хураангуй
 \include{FrontBackMatter/Acknowledgments} % Талархлын хуудас
 \include{FrontBackMatter/Abbreviations} % Товчилсон үгс
@@ -185,8 +191,8 @@ morekeywords={__global__, __device__},  % CUDA specific keywords
 %-------------------------------------------------------------------------------
 
 \tableofcontents % Гарчиг хэвлэх
-% \listoffigures % Хасав: хуудас хэмнэхийн тулд зургийн жагсаалтыг хасав
-% \listoftables  % Хасав: хуудас хэмнэхийн тулд хүснэгтийн жагсаалтыг хасав
+\listoffigures % Зургийн жагсаалт хэвлэх
+\listoftables  % Хүснэгтийн жагсаалт хэвлэх
 
 %-------------------------------------------------------------------------------
 %	THESIS CONTENT - CHAPTERS
@@ -200,9 +206,9 @@ morekeywords={__global__, __device__},  % CUDA specific keywords
 
 % Тезисийн бүлгүүдийг Chapters хавтаснаас бие даасан файл байдлаар оруулах
 % researchoverview хасагдсан — Хураангуйтай давхцаж байсан (audit D2)
-\include{Chapters/Chapter1}   % БҮЛЭГ 1: Асуудлын томьёолол (Удиртгал)
-\include{Chapters/Chapter2}   % БҮЛЭГ 2: Холбогдох судалгаа ба онолын үндэс
-\include{Chapters/Chapter3}   % БҮЛЭГ 3: Аргазүй ба архитектур
+\include{Chapters/Chapter1}   % БҮЛЭГ 1: Оршил
+\include{Chapters/Chapter2}   % БҮЛЭГ 2: Холбоотой бүтээлүүдийн судалгаа
+\include{Chapters/Chapter3}   % БҮЛЭГ 3: Арга зүй ба архитектур
 \include{Chapters/Chapter4}   % БҮЛЭГ 4: Өгөгдлийн боловсруулалт
 \include{Chapters/Chapter5}   % БҮЛЭГ 5: Загвар хөгжүүлэлт ба дамжлага
 \include{Chapters/Chapter6}   % БҮЛЭГ 6: Үр дүн ба хэлэлцүүлэг

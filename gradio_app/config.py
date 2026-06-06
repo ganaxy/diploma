@@ -8,7 +8,7 @@ the UI. Nothing in this module loads weights or touches the GPU.
 from pathlib import Path
 
 # ── Project root and model paths (absolute, no copying) ──────────────────────
-DIPLOM_ROOT = Path(r"C:\Users\M Tech\Desktop\diplom")
+DIPLOM_ROOT = Path(__file__).resolve().parent.parent
 SAMPLE_SCORES = DIPLOM_ROOT / "sample scores"
 
 # Best-by-test-metric checkpoints. The Flat model now points at the

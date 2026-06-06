@@ -1,0 +1,441 @@
+%----------------------------------------------------------------------------------------
+% БҮЛЭГ 2: СУДАЛГААНЫ ХЭСЭГ
+%----------------------------------------------------------------------------------------
+
+\chapter{Судалгааны хэсэг}
+
+\section{Хяналтын камерын видео шинжилгээ}
+
+Видео тандалтын системийн эхний үе нь 1960--1980 оны үед аналог камер, алсын хяналтын өрөө, олон дэлгэц бүхий бүтэцтэйгээр хөгжиж эхэлсэн бөгөөд цагдаагийн хяналт, олон нийтийн аюулгүй байдлын хэрэглээнд 1960-аад оноос туршигдаж байжээ \cite{Snidaro2009, Williams2003}. Орчин үед энэ технологи ухаалаг хот, олон нийтийн аюулгүй байдлын салшгүй хэсэг болж, IHS Markit-ийн тайланд дэлхий даяарх хяналтын камерын тоо хэдэн зуун саяас нэг тэрбум орчимд хүрэх түвшинд өсөж буйг дурдсан байна \cite{IHSMarkit2019}.
+
+Видео тандалтын системийн гол зорилго нь орчныг тасралтгүй хянах, зөрчил, гэмт хэргийг илрүүлэх, нотлох баримт бүрдүүлэхэд оршдог. Гэвч их хэмжээний видео өгөгдлийг гараар боловсруулах нь үр ашиг багатай тул автомат видео шинжилгээний аргууд зайлшгүй шаардлагатай болж байна.
+
+Видео шинжилгээ нь компьютерийн хараа болон гүн сургалтын (deep learning) аргууд дээр тулгуурлан видео бичлэгээс утга агуулга гарган авах үйл явц юм. Ялангуяа хүний үйлдэл таних (human action recognition) болон видео бичлэг дэх хэвийн бус зан үйл илрүүлэх (video anomaly detection) нь энэ салбарын чухал чиглэлүүдийн нэг юм \cite{Poppe2010, Ramachandra2022}.
+
+Зодооны илрүүлэлт нь видео шинжилгээний нарийн төвөгтэй асуудал бөгөөд дараах хүчин зүйлсээс хамаардаг:
+
+\begin{itemize}
+    \item Гэрэлтүүлгийн өөрчлөлт (illumination variation) — Шөнийн нөхцөлд ажиллах хяналтын камер болон дотоод орчны гэрэлтүүлэг.
+    \item Камерын өнцөг, байрлал (viewpoint variation) — дээрээс, хажуугаас гэх мэт авсан.
+    \item Хөдөлгөөний хурд, динамик (motion dynamics) — Гэнэтийн нударга зөрүүлэх зэрэг хурдан өрнөх үйлдэл болон удаан үргэлжлэх маргаан, зөрчилдөөнийг хамруулсан.
+    \item Хүмүүсийн давхцал, халхлалт (occlusion) — Олон хүн нэгэн зэрэг байх нөхцөл.
+    \item Орчны эмх замбараагүй байдал (background clutter) — Олон нийтийн газар, шуугиантай дэвсгэр орчин бүхий бодит нөхцөлд авсан бичлэгүүдийг ашигласан.
+    \item Видео бичлэгийн чанар — Шахалттай, булангийн өнцгөөс авсан, мөн бага нягтралтай видео бичлэгүүдийг хамруулсан.
+\end{itemize}
+
+\section{Олон төрлийн өгөгдөл боловсруулах том хэлний загваруудын харьцуулалт}
+
+Сүүлийн жилүүдэд олон төрлийн өгөгдөл боловсруулах том хэлний загварууд буюу VLM нь хиймэл оюун ухааны салбарт эрчимтэй хөгжиж, дүрс болон текст мэдээллийг хамтад нь боловсруулж, илүү өндөр түвшний ойлголт болон учир шалтгааны дүгнэлт хийх боломжийг бүрдүүлж байна \cite{liu2023llava}.
+
+Эдгээр загварууд нь зөвхөн дүрс таних бус, тухайн дүрсний утга агуулгыг тайлбарлах, асуултад хариулах, мөн нөхцөл байдлыг ойлгон дүгнэх чадвартайгаараа уламжлалт компьютерийн харааны аргуудаас ялгаатай.
+
+Уламжлалт видео шинжилгээний системүүд нь ихэвчлэн мэдрэлийн сүлжээ (CNN), гурван хэмжээст  мэдрэлийн сүлжээ (3D CNN) болон Трансформер архитектурт суурилан видео дахь үйл явдлыг ангилах, илрүүлэх зорилгоор ажилладаг. Харин VLM нь олон төрлийн өгөгдөл боловсруулах том хэлний загварын дүрслэл ашигласнаар дараах давуу талуудыг бий болгодог:
+
+\begin{itemize}
+    \item Үйл явдлын утга агуулгын түвшний ойлголт.
+    \item Хүний үйлдэл болон харилцааг тайлбарлах чадвар.
+    \item Нөхцөл байдлын шалтгаан-үр дагаврыг тайлбарлах боломж.
+    \item Өмнө нь хараагүй даалгаврыг жишээгүй эсвэл цөөн тооны жишээн дээр үндэслэн гүйцэтгэх чадвартай.
+\end{itemize}
+
+Энэхүү судалгаанд Alibaba Group-ийн Qwen загварын хувилбаруудыг \cite{qwen2vl2024,qwen25vl2025} сонгон авч судалсан. Qwen загварууд нь дүрс, текст болон видео оролтыг нэгтгэн боловсруулах чадвартай бөгөөд өндөр чанартай тайлбар үүсгэх болон учир шалтгааны дүгнэлт хийх чадвараараа онцлог юм.
+
+\section{Qwen загваруудын хөгжлийн түүх}
+
+Alibaba Group-ийн Qwen загварын хувилбарууд нь олон төрлийн өгөгдөл боловсруулах том хэлний загварын чиглэлд тасралтгүй хөгжиж байна:
+
+\begin{itemize}
+    \item \textbf{Qwen2-VL (2024):} 7B болон 72B хувилбаруудтай. Dynamic resolution, 20 минутаас дээш видео ойлголт, robotic control чадварыг нэмсэн. RealWorldQA болон DocVQA бенчмарк-д SOTA үзүүлсэн.
+    \item \textbf{Qwen2.5-VL (2025):} Урт видео ойлголт, хүний үйлдэл таних чадвар нэмэгдсэн. Тандалтын хэвийн бус үйлдэл илрүүлэх даалгаварт UCF-Crime өгөгдлийн багцад F1=0.901 үзүүлэлт гаргасан \cite{Borodin2025}.
+    \item \textbf{Qwen3-VL-30B-A3B (2025):} Mixture-of-Experts (MoE) архитектуртай, 30B нийт параметртэй боловч 3.7B идэвхтэй параметр ашигладаг. Энэхүү ажилд багш загвар болгон ашигласан. MMMU, MathVista зэрэг олон жишиг үнэлгээнд тэргүүлэгч байр эзэлсэн \cite{qwen3vl2025}.
+\end{itemize}
+
+\begin{table}[htbp]
+\centering
+\caption{Qwen загваруудын харьцуулалт}
+\label{tab:qwen_comparison}
+{\small
+\begin{tabular}{lccc}
+\hline
+\multirow{2}{*}{\textbf{Загвар}} & \multicolumn{3}{c}{\textbf{Үнэлгээний оноо}} \\
+\cline{2-4}
+& \textbf{Accuracy} & \textbf{F1} & \textbf{Recall} \\
+\hline
+Qwen2-VL-7B (2024) & 0.5590 & 0.5980 & 0.6100 \\
+Qwen2.5-VL-7B BASE (2025) & 0.5440 & 0.6860 & 0.9240 \\
+Qwen3-VL-30B-A3B (2025) & 0.8870 & 0.8950 & 0.8950 \\
+\textbf{Qwen2.5-VL-7B fine-tuned} & \textbf{0.9179} & \textbf{0.9238} & \textbf{0.9238} \\
+\hline
+\multicolumn{4}{l}{\footnotesize Үзүүлэлтүүд нь Val өгөгдөл дээрх хоёртын ангиллын загварын үнэлгээний үр дүн.}\\
+\end{tabular}
+}
+\end{table}
+
+\section{Мэдлэг дамжуулалтын арга}
+
+Мэдлэг дамжуулалт нь том багш загварын мэдлэгийг жижиг сурагч загварт дамжуулах арга бөгөөд анх Hinton et al. \cite{hinton2015distilling} санал болгосон. Сүүлийн үед LoRA зэрэг параметр хэмнэлттэй нарийн тохируулгын аргуудтай хослуулан өргөн хэрэглэгдэж байна \cite{hu2022lora}.
+
+Мэдлэг дамжуулалтын үндсэн санаа нь багш загварын гаргасан мэдлэгийг сурагч загварт сургалтын зорилт болгон дамжуулах явдал юм. Ингэснээр сурагч загвар зөвхөн гар аргаар өгсөн шошгоос бус, багш загварын боловсруулсан тайлбар, бүтэцтэй хариултаас суралцах боломжтой болдог.
+
+Багш загварын гаралтыг сурагч загварын сургалтын зорилт болгон ашиглах нь хүний гараар шошголох зардлыг бууруулж, удирдлагатай сургалт болон хуурамч шошгололтын давуу талыг хослуулах боломжтой.
+
+Зодооны илрүүлэлтийн хүрээнд мэдлэг дамжуулалт ашиглах нь дараах давуу талтай:
+\begin{itemize}
+    \item Том VLM-ийн видео ойлголтын чадварыг жижиг загварт шилжүүлэх.
+    \item Хязгаарлагдмал GPU нөөцтэй орчинд ашиглах боломж.
+    \item Монгол хэлний тайлбарын чадварыг distillation замаар дамжуулах.
+\end{itemize}
+
+%-------------------------------------------------------------------------------
+\section{Холбогдох судалгааны ажлууд}
+
+%-------------------------------------------------------------------------------
+\subsection*{Two-Stream Convolutional Network}
+
+Simonyan болон Zisserman (2014) нь видео ойлголтод зориулсан Two-Stream архитектурыг санал болгосон.
+RGB фрейм болон оптик урсгалыг зэрэгцүүлэн боловсруулж, Spatial CNN болон Temporal CNN гэсэн
+хоёр тусдаа замаар дамжуулан нэгтгэдэг.
+
+\begin{figure}[H]
+\centering
+\resizebox{0.85\linewidth}{!}{%
+\begin{tikzpicture}[node distance=1.8cm and 2.4cm]
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.4cm, minimum height=0.8cm,
+        fill=InputColor!20, draw=InputColor!70!black, font=\small\bfseries,
+        text=InputColor!60!black] (rgb) {RGB Frames};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.4cm, minimum height=0.8cm,
+        fill=InputColor!20, draw=InputColor!70!black, font=\small\bfseries,
+        text=InputColor!60!black, below=1.4cm of rgb] (flow) {Optical Flow};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.6cm, minimum height=0.8cm,
+        fill=ProcessColor!20, draw=ProcessColor!70!black, font=\small\bfseries,
+        text=ProcessColor!60!black, right=2.2cm of rgb] (cnn1) {Spatial CNN};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.6cm, minimum height=0.8cm,
+        fill=ProcessColor!20, draw=ProcessColor!70!black, font=\small\bfseries,
+        text=ProcessColor!60!black, right=2.2cm of flow] (cnn2) {Temporal CNN};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.2cm, minimum height=0.8cm,
+        fill=FusionColor!20, draw=FusionColor!70!black, font=\small\bfseries,
+        text=FusionColor!60!black] (fusion) at ($(cnn1)!0.5!(cnn2) + (2.8cm,0)$) {Fusion};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.4cm, minimum height=0.8cm,
+        fill=OutputColor!20, draw=OutputColor!70!black, font=\small\bfseries,
+        text=OutputColor!60!black, right=2.0cm of fusion] (out) {Classification};
+
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (rgb)  -- (cnn1);
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (flow) -- (cnn2);
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (cnn1) -- (fusion);
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (cnn2) -- (fusion);
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (fusion) -- (out);
+
+\end{tikzpicture}%
+}
+\caption{Two-Stream Convolutional Network архитектур~\cite{Simonyan2014}}
+\label{fig:two_stream}
+\end{figure}
+
+RWF-2000 өгөгдлийн сан дээр Two-Stream архитектур нь 82.3\% нарийвчлал үзүүлсэн. Давуу тал нь орон зай болон цаг хугацааны мэдээллийг зэрэгцүүлэн боловсруулдаг бол сул тал нь optical flow тооцоолол нэмэлт хугацаа шаарддаг, бодит цагийн хэрэглээнд хүндрэлтэй байдаг.
+
+%-------------------------------------------------------------------------------
+\subsection*{I3D (Inflated 3D ConvNet)}
+
+Carreira et al. (2017) нь 2D ConvNet-ийн жин 3D орон зайд ``дэлгэж'' ашигладаг I3D загварыг
+санал болгосон. Видео клипийн орон зай болон цаг хугацааны мэдээллийг нэгтгэн 3D convolution
+ашиглан боловсруулдаг.
+
+\begin{figure}[H]
+\centering
+\resizebox{0.85\linewidth}{!}{%
+\begin{tikzpicture}[node distance=2.0cm and 2.6cm]
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.4cm, minimum height=0.8cm,
+        fill=InputColor!20, draw=InputColor!70!black, font=\small\bfseries,
+        text=InputColor!60!black] (input) {Video Clip};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.8cm, minimum height=0.8cm,
+        fill=ProcessColor!20, draw=ProcessColor!70!black, font=\small\bfseries,
+        text=ProcessColor!60!black, right=2.4cm of input] (conv) {3D Conv Layers};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.4cm, minimum height=0.8cm,
+        fill=FusionColor!20, draw=FusionColor!70!black, font=\small\bfseries,
+        text=FusionColor!60!black, right=2.4cm of conv] (pool) {Global Pooling};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.4cm, minimum height=0.8cm,
+        fill=OutputColor!20, draw=OutputColor!70!black, font=\small\bfseries,
+        text=OutputColor!60!black, right=2.4cm of pool] (out) {Таамаглал};
+
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (input) -- (conv);
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (conv)  -- (pool);
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (pool)  -- (out);
+
+  \node[font=\tiny\itshape, text=ArrowColor!60, below=0.18cm of conv] {T $\times$ H $\times$ W};
+
+\end{tikzpicture}%
+}
+\caption{I3D (Inflated 3D ConvNet) архитектур~\cite{Carreira2017}}
+\label{fig:i3d}
+\end{figure}
+
+I3D нь ImageNet-д урьдчилан сургасан 2D загварын жинг 3D болгон өргөтгөж ашигладаг бөгөөд энэ нь дамжин сургалтын үр ашгийг 3D convolution-тай хослуулах боломжийг олгодог. RWF-2000 дээр 82.0\% нарийвчлал үзүүлсэн. Гол сул тал нь параметрийн тоо их байдаг.
+
+%-------------------------------------------------------------------------------
+\subsection*{SlowFast Network}
+
+Feichtenhofer et al. (2019) нь хоёр замт SlowFast архитектурыг санал болгосон.
+Slow Path нь бага давтамжтай боловч олон сувагтай бөгөөд орон зайн мэдээллийг
+гүнзгий задалдаг. Fast Path нь өндөр давтамжтай боловч цөөн сувагтай тул хөдөлгөөний
+мэдээллийг хурдан боловсруулдаг.
+
+\begin{figure}[H]
+\centering
+\resizebox{0.85\linewidth}{!}{%
+\begin{tikzpicture}[node distance=1.6cm and 2.4cm]
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.6cm, minimum height=0.8cm,
+        fill=InputColor!20, draw=InputColor!70!black, font=\small\bfseries,
+        text=InputColor!60!black] (slow_in) {\parbox{2.2cm}{\centering Slow Path\\\small(Low FPS)}};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.6cm, minimum height=0.8cm,
+        fill=ProcessColor!20, draw=ProcessColor!70!black, font=\small\bfseries,
+        text=ProcessColor!60!black, below=1.8cm of slow_in] (fast_in) {\parbox{2.2cm}{\centering Fast Path\\\small(High FPS)}};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.8cm, minimum height=0.8cm,
+        fill=FusionColor!20, draw=FusionColor!70!black, font=\small\bfseries,
+        text=FusionColor!60!black] (fusion) at ($(slow_in)!0.5!(fast_in) + (3.4cm,0)$) {Lateral Fusion};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.4cm, minimum height=0.8cm,
+        fill=OutputColor!20, draw=OutputColor!70!black, font=\small\bfseries,
+        text=OutputColor!60!black, right=2.2cm of fusion] (out) {Output};
+
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (slow_in) -- (fusion);
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (fast_in) -- (fusion);
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (fusion)   -- (out);
+  \draw[->,>=Stealth,dashed,color=FusionColor!60] (fast_in.east) to[out=30,in=-30]
+        node[right,font=\tiny\itshape,color=FusionColor!70] {lateral} (slow_in.east);
+
+\end{tikzpicture}%
+}
+\caption{SlowFast Network архитектур~\cite{Feichtenhofer2019}}
+\label{fig:slowfast}
+\end{figure}
+
+SlowFast нь RWF-2000 дээр 86.1\% нарийвчлал үзүүлж, Two-Stream болон I3D-ийг давсан. Хоёр замын lateral connection нь орон зайн болон хөдөлгөөний мэдээллийг нэгтгэхэд үр дүнтэй. Гэхдээ зодооны үйл явдалд тайлбар гаргах чадваргүй.
+
+%-------------------------------------------------------------------------------
+\subsection*{Flow Gated Network (RWF-2000)}
+
+Cheng et al. (2021) нь RWF-2000 өгөгдлийн санд зориулан Flow Gated Network-ийг санал болгосон.
+RGB болон оптик урсгалын боловсруулалтыг gating механизмаар удирдан нэгтгэдэг.
+
+\begin{figure}[H]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[node distance=1.6cm and 2.2cm]
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.2cm, minimum height=0.8cm,
+        fill=InputColor!20, draw=InputColor!70!black, font=\small\bfseries,
+        text=InputColor!60!black] (rgb) {RGB};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.2cm, minimum height=0.8cm,
+        fill=InputColor!20, draw=InputColor!70!black, font=\small\bfseries,
+        text=InputColor!60!black, below=1.4cm of rgb] (flow) {Optical Flow};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.4cm, minimum height=0.8cm,
+        fill=ProcessColor!20, draw=ProcessColor!70!black, font=\small\bfseries,
+        text=ProcessColor!60!black, right=2.0cm of rgb] (cnn1) {3D CNN};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.4cm, minimum height=0.8cm,
+        fill=ProcessColor!20, draw=ProcessColor!70!black, font=\small\bfseries,
+        text=ProcessColor!60!black, right=2.0cm of flow] (cnn2) {Motion CNN};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.2cm, minimum height=0.8cm,
+        fill=FusionColor!20, draw=FusionColor!70!black, font=\small\bfseries,
+        text=FusionColor!60!black] (gate) at ($(cnn1)!0.5!(cnn2) + (2.6cm,0)$) {Flow Gate};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.2cm, minimum height=0.8cm,
+        fill=OutputColor!20, draw=OutputColor!70!black, font=\small\bfseries,
+        text=OutputColor!60!black, right=2.0cm of gate] (out) {Output};
+
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (rgb)  -- (cnn1);
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (flow) -- (cnn2);
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (cnn1) -- (gate);
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (cnn2) -- (gate);
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (gate) -- (out);
+
+\end{tikzpicture}%
+}
+\caption{Flow Gated Network архитектур~\cite{Cheng2021}}
+\label{fig:flow_gated}
+\end{figure}
+
+Flow Gated Network нь RWF-2000 дээр 87.25\% нарийвчлалтай хамгийн сайн гүн сургалтын аргуудын нэг байсан. Gating механизм нь оптик урсгалын хамааралтай байдлыг динамикаар тохируулах боломжийг олгодог. Гэхдээ энэ арга нь зодооны үйл явдалд тайлбар гаргах чадваргүй.
+
+%-------------------------------------------------------------------------------
+\subsection*{VIVID (VLM + LLM)}
+
+Gonzalez et al. (2025) нь VLM болон LLM-ийг хослуулан зодооны зөрчлийг илрүүлж,
+тайлбар гаргах VIVID аргыг санал болгосон. Оптик урсгал дээр суурилсан keyframe
+сонголтоор зурагт дүн шинжилгээ хийж, гаднын мэдлэгийн санг ашиглан LLM-ийн
+хэклэгдсэн хариулыг залруулдаг.
+
+\begin{figure}[H]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[node distance=1.4cm and 1.8cm]
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.0cm, minimum height=0.8cm,
+        fill=InputColor!20, draw=InputColor!70!black, font=\small\bfseries,
+        text=InputColor!60!black] (video) {Video};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.2cm, minimum height=0.8cm,
+        fill=ProcessColor!20, draw=ProcessColor!70!black, font=\small\bfseries,
+        text=ProcessColor!60!black, right=1.6cm of video] (flow) {Optical Flow};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.2cm, minimum height=0.8cm,
+        fill=ProcessColor!20, draw=ProcessColor!70!black, font=\small\bfseries,
+        text=ProcessColor!60!black, right=1.6cm of flow] (frame) {Keyframe Select};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.0cm, minimum height=0.8cm,
+        fill=VLMColor!20, draw=VLMColor!70!black, font=\small\bfseries,
+        text=VLMColor!60!black, right=1.6cm of frame] (vlm) {VLM};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.0cm, minimum height=0.8cm,
+        fill=VLMColor!20, draw=VLMColor!70!black, font=\small\bfseries,
+        text=VLMColor!60!black, right=1.6cm of vlm] (llm) {LLM};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.4cm, minimum height=0.8cm,
+        fill=OutputColor!20, draw=OutputColor!70!black, font=\small\bfseries,
+        text=OutputColor!60!black, right=1.6cm of llm] (out) {Result + Expl.};
+
+  \node[rectangle, rounded corners=5pt, minimum width=2.4cm, minimum height=0.75cm,
+        fill=DataColor!20, draw=DataColor!70!black, font=\small\bfseries,
+        text=DataColor!60!black, above=1.2cm of llm] (kb) {Violence DB};
+
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (video) -- (flow);
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (flow)  -- (frame);
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (frame) -- (vlm);
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (vlm)   -- (llm);
+  \draw[->,>=Stealth,thick,color=ArrowColor!80] (llm)   -- (out);
+  \draw[->,>=Stealth,dashed,color=DataColor!70] (kb) -- (llm);
+
+\end{tikzpicture}%
+}
+\caption{VIVID архитектур~\cite{Gonzalez2025}}
+\label{fig:vivid}
+\end{figure}
+
+VIVID нь VLM-ийг зодооны илрүүлэлтэд ашигласан анхдагч аргуудын нэг бөгөөд өмнөх жишээгүй нөхцөлд RWF-2000 дээр 79.7\% нарийвчлал үзүүлсэн. Гол давуу тал нь тайлбар гаргах чадвартай боловч сул тал нь Монгол хэлийг дэмждэггүй, нарийн тохируулга хийгдээгүй тул нарийвчлал харьцангуй бага.
+
+%-------------------------------------------------------------------------------
+\section{Архитектур ба арга зүйн харьцуулсан хүснэгт}
+
+Доорх хүснэгтэд зодооны илрүүлэлтийн голлох аргуудыг архитектур, өгөгдлийн багц, үр дүн болон хязгаарлалтаар харьцуулсан болно.
+
+\begin{table}[htbp]
+\centering
+\caption{Зодооны илрүүлэлтийн аргуудын харьцуулалт}
+\label{tab:related_work_comparison}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llllll}
+\hline
+\textbf{Эх сурвалж} & \textbf{Архитектур} & \textbf{Арга зүй} & \textbf{Өгөгдлийн сан} & \textbf{Үнэлгээний оноо} & \textbf{Гол хязгаарлалт} \\
+\hline
+Simonyan \& Zisserman (2014) & Two-Stream CNN & Optical flow + RGB & RWF-2000 & 82.3\% & Тайлбар байхгүй \\
+Carreira et al. (2017) & I3D & 3D Convolution & RWF-2000 & 82.0\% & Удаан дүгнэлт гаргалт \\
+Feichtenhofer et al. (2019) & SlowFast & Dual pathway & RWF-2000 & 86.1\% & Тайлбар байхгүй \\
+Cheng et al. (2021) & Flow Gated Net & Gating mechanism & RWF-2000 & 87.25\% & Тайлбар байхгүй \\
+Gonzalez et al. (2025) & VLM + LLM & VIVID & RWF-2000 & 79.7\% & Монгол хэл байхгүй \\
+\textbf{Энэхүү ажил} & \textbf{stillmeta/fight-video-qlora1} & \textbf{KD + LoRA} & \textbf{RWF-2000 + RLVS + Violence} & \textbf{Accuracy=0.9179, F1=0.9238, Recall=0.9238} & \textbf{Монгол тайлбар гаргана} \\
+\hline
+\end{tabular}%
+}
+\end{table}
+
+%-------------------------------------------------------------------------------
+\section{Судалгааны тулгамдсан асуудал}
+
+Дээрх судалгааны ажлуудыг нэгтгэн харахад дараах чухал тулгамдсан асуудлууд тодорхойлогдоно:
+
+\subsection*{1. Тайлбарын тулгамдсан асуудал}
+
+Одоо байгаа зодооны илрүүлэлтийн системүүдийн дийлэнх нь зодоон байгаа эсэхийг ангилах чадвартай боловч яагаад, хэрхэн болсныг тайлбарлах чадваргүй бөгөөд хэрэг шалгах, нотлох баримт бүрдүүлэх зорилгоор ашиглахын тулд нарийвчилсан, бүтэцтэй тайлбар шаардлагатай.
+
+\textbf{Энэхүү ажлын хувь нэмэр:} VLM-ийн видео ойлголтын чадварыг жижиг загварт дамжуулах.
+
+\subsection*{2. Монгол хэлний тулгамдсан асуудал}
+
+Зодооны илрүүлэлтийн судалгааны ажлуудын бүгд англи хэл дээр тайлбар гаргадаг. Монгол хэлний ойлголт, тайлбар гаргах чадвартай систем одоохондоо байхгүй байна.
+
+\textbf{Энэхүү ажлын хувь нэмэр:} Монгол хэлний нөхцөлд ашиглах боломжтой зодоон илрүүлэлтийн шийдлийг боловсруулж, бодит туршилт болон үнэлгээний үр дүнд тулгуурлан үр ашгийг нь судалсан.
+
+\subsection*{3. Хурдны тулгамдсан асуудал}
+
+VLM-д суурилсан аргууд (VIVID) нь тайлбар гаргадаг боловч шууд хэрэглээнд тооцооллын нөөц их шаарддаг.
+
+\textbf{Энэхүү ажлын хувь нэмэр:} Сурагч загварыг хязгаарлагдмал тооцооллын нөөцтэй орчинд ашиглах боломжтой байдлаар боловсруулсан.
+
+\subsection*{4. Өгөгдлийн тулгамдсан асуудал}
+
+Монголын хяналтын камерын нөхцөлд тохирсон, Монгол хэлний тайлбартай сургалтын өгөгдөл байхгүй. Гар аргаар шошголох нь цаг их шаарддаг.
+
+\textbf{Энэхүү ажлын хувь нэмэр:} Багш VLM ашиглан сурагч загварын сургалтын өгөгдөл бэлтгэх урсгалыг боловсруулснаар хүний гараар шошголох зардлыг бууруулах боломжийг харуулсан.
+
+\subsection*{5. Зөрчлийн ангиллын тулгамдсан асуудал}
+
+\begin{sloppypar}Одоогийн аргуудын ихэнх нь зодооныг хоёртын (хүчирхийлэлтэй/хүчирхийлэлгүй) ангилалтаар тодорхойлдог. Гэхдээ бодит хэрэглээнд зодооны зөрчлийн зэрэглэл (байхгүй, бага, дунд, өндөр) нь цагдааны хариу арга хэмжээний яаралтай байдлыг тодорхойлоход чухал.\end{sloppypar}
+
+\textbf{Энэхүү ажлын хувь нэмэр:} Багш загвараас үүсгэсэн Q\&A тайлбарын өгөгдлөөр сурагч загварыг нарийвчилсан тохируулж, хоёртын ангиллын загварын үнэлгээн дээр гарсан хазайлтыг ил тод шинжилсэн.
+
+%-------------------------------------------------------------------------------
+\subsection*{Энэхүү ажлын ялгарах онцлог}
+
+\begin{itemize}
+\item Багш VLM ашиглан автоматаар өгөгдөл үүсгэсэн — хүний гараар шошголох зардал байхгүй.
+\item Монгол хэлний тайлбартай Q\&A өгөгдлийн урсгал.
+\item LoRA нарийн тохируулга ашигласан — бага нөөцөд сургах боломжтой.
+\item Хязгаарлагдмал тооцооллын нөөцтэй орчинд ашиглах боломжтой хөнгөн загвар.
+\item Зөвхөн илрүүлэлт биш, тайлбар болон учир шалтгааны дүгнэлт гаргах чадвартай.
+\item 4 түвшний зөрчлийн ангилал.
+\end{itemize}
+
+%-------------------------------------------------------------------------------
+\section{Transformer-д суурилсан видео шинжилгээний аргууд}
+%-------------------------------------------------------------------------------
+
+\subsection*{TimeSformer}
+
+Bertasius et al. (2021) нь видео шинжилгээнд Transformer архитектурыг анх хэрэгжүүлсэн TimeSformer-ийг санал болгосон. Space-time attention механизмыг ашиглан хүрд болон хажуу талын зүүн тасалдсан (divided space-time attention) хандлагаар тооцооллын нөөцийг хэмнэдэг.
+
+TimeSformer нь Kinetics-400 өгөгдлийн багц дээр 80.7\% top-1 нарийвчлал үзүүлж, уламжлалт CNN аргуудыг давснаар transformer архитектурыг видео шинжилгээнд хэрэглэх шинэ чиглэлийг нээсэн. Гэвч зодооны илрүүлэлтийн хувьд урт хугацааны нэгдсэн тайлбар гаргах чадваргүй нь хязгаарлалт болдог.
+
+\subsection*{VideoMAE}
+
+Tong et al. (2022) нь видеоны өөрөө хяналттай сургалтын урьдчилсан сургалтад зориулсан VideoMAE (Masked Autoencoders for Videos) архитектурыг санал болгосон. Видео токенийн 90\%-г санамсаргүй байдлаар халхалж, үлдсэн токенээр видеог сэргээх замаар урьдчилан сургадаг.
+
+VideoMAE нь бага хэмжээний шошготой өгөгдлөөр нарийвчилсан тохируулга хийж, UCF-101 дээр 96.1\% нарийвчлал хүрдэг. Гэхдээ энэ арга нь зодооны тайлбар гаргах чадваргүй бөгөөд зөвхөн ангилалтын түвшинд ажилладаг.
+
+\subsection*{InternVL болон бусад VLM}
+
+Chen et al. (2023)-ийн InternVL нь дүрс болон текстийн оролтыг зэрэгцүүлэн боловсруулдаг өөр нэг том хэлний загвар юм. InternVL2-8B нь MMBench, MathVista зэрэг бенчмарк дээр дэлхийн тэргүүний байрлалд орох үзүүлэлт гаргасан боловч видео дараалал болон Монгол хэлний тайлбар гаргах чадварын хувьд Qwen загварын хувилбарууд давуу байна.
+
+GPT-4V (OpenAI, 2023) болон Gemini 1.5 Pro (Google, 2024) зэрэг коммерцийн VLM нь техникийн гүйцэтгэлийн хувьд тэргүүлэгч байр эзэлдэг боловч:
+
+\begin{itemize}
+    \item Нээлттэй жин (open weights) байхгүй тул дотоод орчинд суурилуулан ажиллуулах боломжгүй.
+    \item API-аар ашиглах тохиолдолд мэдэгдэхүйц зардал гарна.
+    \item Монгол хэлний тайлбарын чанар хязгаарлагдмал.
+    \item Хувийн мэдээллийн аюулгүй байдлын эрсдэлтэй.
+\end{itemize}
+
+Эдгээр шалтгааны улмаас дотоодод суурилуулан ажиллуулах боломжтой Qwen загварын хувилбаруудыг сонгосон.
+
+%-------------------------------------------------------------------------------
+\section{LoRA болон PEFT аргуудын харьцуулалт}
+%-------------------------------------------------------------------------------
+
+Параметрийн үр ашигтай нарийвчилсан тохируулга (PEFT) аргууд нь бүтэн нарийвчилсан тохируулгын оронд загварын зарим хэсгийг сургаснаар санах ой болон тооцооллын нөөцийг хэмнэх зорилготой. Угтвар тохируулга, адаптер, IA$^3$, LoRA зэрэг аргууд нь өөр өөр түвшинд нэмэлт параметр оруулж сургадаг боловч энэхүү судалгаанд LoRA-г сонгосон.
+
+LoRA нь энэхүү судалгаанд хамгийн тохиромжтой арга болсон шалтгаан нь суурь загварын бүх жинг өөрчлөхгүйгээр бага хэмжээний нэмэлт жин сургах боломжтой, Qwen төрлийн transformer загваруудтай нийцтэй, мөн HuggingFace/PEFT хэрэгслүүдээр хэрэгжүүлэхэд тогтвортой байдагтай холбоотой.

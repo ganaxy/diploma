@@ -101,6 +101,7 @@ batch_tracker.json
 
 # ── Misc ──────────────────────────────────────────────────────────────────
 .DS_Store
+._*
 Thumbs.db
 *.tmp
 nul
@@ -119,10 +120,25 @@ generate_figures.py
 current idea.txt
 current progression of diploma.txt
 sample scores/
+outputs/
+node_modules/
+**/node_modules/
+__MACOSX/
+**/__MACOSX/
+presentation/_u_edit/
+presentation/__dump.txt
+*.bcf
+*.bad
+*-SAVE-ERROR
+*.bad-*
+*-blx.bib
+*.run
+*.pzda
 
 # ── Claude session working notes ──────────────────────────────────────────
 SESSION_*.md
 SESSION_HANDOFF_*.md
+CLAUDE_HANDOFF_SESSION.md
 
 # ── Gradio cache ──────────────────────────────────────────────────────────
 .gradio/

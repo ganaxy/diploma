@@ -2,7 +2,7 @@
 
 Interactive web UI for the Mongolian social-media comment classifier built in
 the bachelor diploma project. Loads the already-trained MN-BERT models from
-`..\sample scores\` by absolute path and exposes both the **Flat 4-class**
+`..\sample scores\` relative to the copied project folder and exposes both the **Flat 4-class**
 model (Chapter 5 "optimal solution") and the **Two-stage** pipeline (Chapter 3
 original architecture) with a live toggle.
 

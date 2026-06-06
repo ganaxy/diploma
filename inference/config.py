@@ -1,6 +1,6 @@
 from pathlib import Path
 
-DIPLOM_ROOT = Path(r"C:\Users\M Tech\Desktop\diplom")
+DIPLOM_ROOT = Path(__file__).resolve().parent.parent
 SAMPLE_SCORES = DIPLOM_ROOT / "sample scores"
 
 FLAT_MODEL_DIR = SAMPLE_SCORES / "grid_ckpt_bs16_lr3e-05"

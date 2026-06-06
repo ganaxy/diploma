@@ -617,7 +617,4 @@ def build_ui() -> gr.Blocks:
 
 if __name__ == "__main__":
     ui = build_ui()
-    # share=True asks Gradio to open a public *.gradio.live tunnel to this
-    # process. The URL is printed in the terminal and lasts 72 hours.
-    # Anyone with that URL can use the app, so don't leave it running unattended.
     ui.launch(share=True)

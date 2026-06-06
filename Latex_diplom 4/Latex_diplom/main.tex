@@ -1,0 +1,270 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Их сургуулийн оюутны тезис
+% LaTeX Загвар
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[
+11pt,
+oneside,
+english,
+singlespacing,
+nolistspacing,
+headsepline,
+]{MUST-Thesis}
+
+%-------------------------------------------------------------------------------
+%	PACKAGES
+%-------------------------------------------------------------------------------
+
+\usepackage{iftex}
+\ifPDFTeX
+    \usepackage[utf8]{inputenc}
+    \usepackage[T1,T2A]{fontenc}
+\else
+    \usepackage{fontspec}
+    \setmainfont{cmunrm.otf}[
+        BoldFont=cmunbx.otf,
+        ItalicFont=cmunti.otf,
+        BoldItalicFont=cmunbi.otf
+    ]
+    \setsansfont{cmunss.otf}[
+        BoldFont=cmunsx.otf,
+        ItalicFont=cmunsi.otf,
+        BoldItalicFont=cmunso.otf
+    ]
+    \setmonofont{cmuntt.otf}[
+        BoldFont=cmuntb.otf,
+        ItalicFont=cmunit.otf
+    ]
+\fi
+\usepackage[mongolian]{babel}
+\addto\captionsmongolian{%
+    \renewcommand{\contentsname}{Гарчиг}%
+    \renewcommand{\listfigurename}{Зургийн жагсаалт}%
+    \renewcommand{\listtablename}{Хүснэгтийн жагсаалт}%
+    \renewcommand{\figurename}{Зураг}%
+    \renewcommand{\tablename}{Хүснэгт}%
+    \renewcommand{\chaptername}{Бүлэг}%
+    \renewcommand{\appendixname}{Хавсралт}%
+    \renewcommand{\bibname}{Ашигласан материал}%
+}
+\usepackage{titlesec}
+\usepackage[table]{xcolor}
+\usepackage{rotating}
+\usepackage{multirow}
+\usepackage{tcolorbox}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{colortbl}
+\tcbuselibrary{skins}
+
+\newcolumntype{Y}{>{\raggedleft\arraybackslash}X}
+\newcolumntype{Z}{>{\centering\arraybackslash}X}
+
+\tcbset{
+    tab2/.style={
+        enhanced,
+        fonttitle=\bfseries,
+        fontupper=\footnotesize\rmfamily,
+        colback=white,
+        colframe=black,
+        colbacktitle=white,
+        coltitle=black,
+        center title,
+        sharp corners=all
+    }
+}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{pgf}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,arrows.meta,automata,positioning,fit,backgrounds,shadows,calc,decorations.pathreplacing}
+\usepackage{subcaption}
+\usepackage{caption}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{pagecolor}
+
+\definecolor{LigthBlue}{RGB}{102,255,255}
+\definecolor{Beige}{RGB}{255,220,180}
+\definecolor{OliveGreen}{cmyk}{0.64,0,0.95,0.40}
+\definecolor{CadetBlue}{cmyk}{0.62,0.57,0.23,0}
+\definecolor{lightlightgray}{gray}{0.9}
+\definecolor{InputColor}{RGB}{52,152,219}
+\definecolor{ProcessColor}{RGB}{46,204,113}
+\definecolor{FusionColor}{RGB}{230,126,34}
+\definecolor{OutputColor}{RGB}{231,76,60}
+\definecolor{VLMColor}{RGB}{155,89,182}
+\definecolor{TeacherColor}{RGB}{41,128,185}
+\definecolor{StudentColor}{RGB}{39,174,96}
+\definecolor{DataColor}{RGB}{243,156,18}
+\definecolor{ArrowColor}{RGB}{44,62,80}
+
+\usepackage{listings}
+\renewcommand{\lstlistingname}{Эх код}
+\lstset{
+    language={[x86masm]Assembler},
+    basicstyle=\ttfamily,
+    keywordstyle=\color{OliveGreen},
+    commentstyle=\color{CadetBlue},
+    numbers=left,
+    numberstyle=\tiny,
+    stepnumber=1,
+    numbersep=5pt,
+    backgroundcolor=\color{lightlightgray},
+    frame=none,
+    tabsize=2,
+    captionpos=t,
+    breaklines=true,
+    breakatwhitespace=false,
+    showspaces=false,
+    showtabs=false,
+    columns=flexible,
+    morekeywords={__global__, __device__},
+}
+
+\usepackage[autostyle=false]{csquotes}
+\usepackage{xurl}
+\setlength{\emergencystretch}{3em}
+
+%-------------------------------------------------------------------------------
+%	BIBLIOGRAPHY
+%-------------------------------------------------------------------------------
+
+\usepackage[
+  backend=biber,
+  sorting=none
+]{biblatex}
+\setcounter{biburlnumpenalty}{100}
+\setcounter{biburlucpenalty}{100}
+\setcounter{biburllcpenalty}{100}
+\addbibresource{references.bib}
+
+% biblatex-д mongolian хэлний mapping байхгүй тул english mapping ашиглана
+\DeclareLanguageMapping{mongolian}{english}
+\defbibheading{whitebibliography}[\bibname]{%
+    \chapter*{#1}%
+    \markboth{#1}{#1}%
+    \pagecolor{white}%
+}
+
+% Ашигласан материалын string-үүдийг зөв харагдуулах
+\DefineBibliographyStrings{english}{
+  andothers = {et\addabbrvspace al\adddot},
+  and       = {and},
+  in        = {in}
+}
+
+%-------------------------------------------------------------------------------
+%	NAMES
+%-------------------------------------------------------------------------------
+
+\newcommand{\authorshipname}{Зохиогчийн эрх хамгаалал}
+\newcommand{\abbrevname}{Товчилсон үгс}
+\newcommand{\symbolsname}{Таних тэмдэгтүүд}
+\newcommand{\acknowledgementname}{Талархал}
+\newcommand{\abstractname}{Хураангуй}
+\newcommand{\conclusionname}{Дүгнэлт}
+
+%-------------------------------------------------------------------------------
+%	THESIS INFORMATION
+%-------------------------------------------------------------------------------
+
+\thesistitle{ХЯНАЛТЫН КАМЕРЫН БИЧЛЭГНЭЭС ЗОДООНЫ ЗӨРЧИЛ ИЛРҮҮЛЭХ ТАЙЛБАР ГАРГАХ ДҮН ШИНЖИЛГЭЭ ХИЙХ СУДАЛГАА}
+\thesistitleeng{}
+\thesistype{Бакалаврын төгсөлтийн ажил}
+\authorshort{О.Бат-Эрдэнэ}
+\authorlong{ОДГЭРЭЛИЙН БАТ-ЭРДЭНЭ}
+\authorcode{B221960003}
+\addresses{}
+\supervisor{Доктор (Ph.D), дэд профессор Ж.Оргил}
+\reader{}
+\advisorA{Магистр (M.Sc) Б.Алтантуяа}
+\advisorB{}
+\degreeind{061902000000002306}
+\degree{Хиймэл оюун}
+\subject{Хиймэл оюун}
+\keywords{VLM, LoRA, Мэдлэг дамжуулалт, зодооны илрүүлэлт}
+\department{Компьютерын ухааны тэнхим}
+\deptchair{Доктор (Ph.D), дэд профессор А.Хүдэр}
+\group{Хиймэл оюун}
+\faculty{\href{http://www.sict.edu.mn}{Мэдээлэл, Холбооны Технологийн Сургууль}}
+\university{\href{http://www.must.edu.mn}{Шинжлэх Ухаан, Технологийн Их Сургууль}}
+
+\hypersetup{
+    pdftitle=\ttitle,
+    pdfauthor=\shortname,
+    pdfkeywords=\keywordnames,
+    allcolors=black
+}
+
+%-------------------------------------------------------------------------------
+%	DOCUMENT
+%-------------------------------------------------------------------------------
+
+\begin{document}
+
+\frontmatter
+\pagestyle{plain}
+\pagecolor{LigthBlue}
+\include{FrontBackMatter/Titlepage}
+\pagecolor{white}
+\include{FrontBackMatter/Plan-Review}
+\include{FrontBackMatter/Progress}
+\include{FrontBackMatter/Review}
+\include{FrontBackMatter/Declaration}
+\include{FrontBackMatter/Abstract}
+\include{FrontBackMatter/Acknowledgments}
+\include{FrontBackMatter/Abbreviations}
+
+%-------------------------------------------------------------------------------
+%	CONTENTS
+%-------------------------------------------------------------------------------
+
+\setcounter{tocdepth}{1}
+\tableofcontents
+\listoffigures
+\listoftables
+
+%-------------------------------------------------------------------------------
+%	MAIN CONTENT
+%-------------------------------------------------------------------------------
+
+\mainmatter
+\pagestyle{thesis}
+\myformat
+
+% Бүлгийн гарчгийн хуудас бежин өнгөтэй, бусад хуудас цагаан
+\pretocmd{\chapter}{\pagecolor{Beige}\thispagestyle{plain}}{}{}
+\pretocmd{\section}{\pagecolor{white}}{}{}
+\pretocmd{\subsection}{\pagecolor{white}}{}{}
+
+\include{Chapters/Chapter1}
+\include{Chapters/Chapter2}
+\include{Chapters/Chapter3}
+\include{Chapters/Chapter4_data}
+\include{Chapters/Chapter4}
+\include{Chapters/Chapter5}
+\include{Chapters/Conclusion}
+
+%-------------------------------------------------------------------------------
+%	ХАВСРАЛТ
+%-------------------------------------------------------------------------------
+
+\cleardoublepage
+\include{Chapters/Appendix}
+
+%-------------------------------------------------------------------------------
+%	BIBLIOGRAPHY
+%-------------------------------------------------------------------------------
+
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{Ашигласан материал}
+\begingroup
+\sloppy
+\printbibliography[heading=whitebibliography,title={Ашигласан материал}]
+\endgroup
+
+\end{document}

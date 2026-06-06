@@ -228,14 +228,16 @@
 \RequirePackage{geometry}
 
 \geometry{
-	headheight=4ex,
+	headheight=18pt,
+	headsep=6pt,
 	paper=a4paper, % Цаасны хэмжээ
-	inner=3.0cm, % Дотоод зай
-	outer=1.5cm, % Гадаад зай
+	includehead,
+	includefoot,
+	left=3.0cm, % Зүүн зай
+	right=1.5cm, % Баруун зай
 	bindingoffset=0cm, % Үдэлтийн зай
-	top=2.0cm, % Дээд зай
+	top=1.77cm, % Дээд зай
 	bottom=2.0cm, % Доод зай
-	footskip=1.0cm,
 	%showframe,% Хуудасны хүрээг харуулах
 }
 \raggedbottom
