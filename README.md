@@ -69,6 +69,8 @@ diploma/
 │   ├── preprocess.py
 │   └── requirements.txt
 │
+├── sample scores/
+│   └── relabeled_v7_corrected.csv   # Final 10k annotated dataset used by the app
 ├── requirements.txt
 └── .gitignore
 ```

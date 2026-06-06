@@ -119,7 +119,8 @@ strip_comments.py
 generate_figures.py
 current idea.txt
 current progression of diploma.txt
-sample scores/
+sample scores/*
+!sample scores/relabeled_v7_corrected.csv
 _extract_pdf_accs.py
 contract_llm_architecture 1_picturethatprofessorsendmeforarchitecture.png
 guideline_text.txt
